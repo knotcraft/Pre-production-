@@ -23,6 +23,7 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
@@ -33,7 +34,7 @@ import { useUser, useDatabase } from '@/firebase';
 import { ref, onValue, set, push, remove, update } from 'firebase/database';
 import { toast } from '@/hooks/use-toast';
 import type { Guest } from '@/lib/types';
-import { Loader2 } from 'lucide-react';
+import { Loader2, MoreVertical, Mail, Phone, FileText, Pencil, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
@@ -254,7 +255,7 @@ export default function GuestsPage() {
                         <div className="space-y-2 p-2">
                             {filteredGuests.map(guest => (
                                 <div key={guest.id} className={cn(
-                                    "bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4 group",
+                                    "bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4 group relative",
                                     guest.status === 'declined' && 'opacity-60'
                                 )}>
                                     <Avatar>
@@ -299,15 +300,34 @@ export default function GuestsPage() {
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
                                             <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 absolute right-2 top-2">
-                                                <span className="material-symbols-outlined text-base">more_vert</span>
+                                                <MoreVertical className="h-4 w-4" />
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
+                                            {guest.email && (
+                                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-default focus:bg-transparent text-muted-foreground">
+                                                    <Mail className="mr-2 h-4 w-4" />
+                                                    <span>{guest.email}</span>
+                                                </DropdownMenuItem>
+                                            )}
+                                            {guest.phone && (
+                                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-default focus:bg-transparent text-muted-foreground">
+                                                    <Phone className="mr-2 h-4 w-4" />
+                                                    <span>{guest.phone}</span>
+                                                </DropdownMenuItem>
+                                            )}
+                                            {guest.notes && (
+                                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-default focus:bg-transparent text-muted-foreground">
+                                                    <FileText className="mr-2 h-4 w-4" />
+                                                    <span className="truncate max-w-48">{guest.notes}</span>
+                                                </DropdownMenuItem>
+                                            )}
+                                            {(guest.email || guest.phone || guest.notes) && <DropdownMenuSeparator />}
                                             <DropdownMenuItem onClick={() => openGuestDialog(guest)}>
-                                            <span className="material-symbols-outlined text-base mr-2">edit</span> Edit
+                                                <Pencil className="mr-2 h-4 w-4" /> Edit
                                             </DropdownMenuItem>
                                             <DropdownMenuItem onClick={() => openDeleteDialog(guest)} className="text-destructive">
-                                            <span className="material-symbols-outlined text-base mr-2">delete</span> Delete
+                                                <Trash2 className="mr-2 h-4 w-4" /> Delete
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
@@ -351,6 +371,10 @@ export default function GuestsPage() {
                          <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="email" className="text-right">Email</Label>
                             <Input id="email" type="email" value={formState.email || ''} onChange={(e) => handleFormChange('email', e.target.value)} className="col-span-3" />
+                        </div>
+                         <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="phone" className="text-right">Phone</Label>
+                            <Input id="phone" type="tel" value={formState.phone || ''} onChange={(e) => handleFormChange('phone', e.target.value)} className="col-span-3" />
                         </div>
                          <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="notes" className="text-right">Notes</Label>
