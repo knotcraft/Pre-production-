@@ -61,10 +61,6 @@ export default function BudgetPage() {
       {categories.length === 0 ? (
         <div className="text-center p-10">
           <p className="text-muted-foreground">You haven't added any budget categories yet.</p>
-          <Button className="mt-4">
-            <span className="material-symbols-outlined text-base mr-2">add</span>
-            Add Category
-          </Button>
         </div>
       ) : (
         <div className="flex flex-col gap-2 p-4">
