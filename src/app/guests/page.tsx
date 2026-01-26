@@ -1,6 +1,7 @@
+
 'use client';
 import Link from 'next/link';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -34,7 +35,7 @@ import { useUser, useDatabase } from '@/firebase';
 import { ref, onValue, set, push, remove, update } from 'firebase/database';
 import { toast } from '@/hooks/use-toast';
 import type { Guest } from '@/lib/types';
-import { Loader2, MoreVertical, Mail, Phone, FileText, Pencil, Trash2, Leaf, Beef } from 'lucide-react';
+import { Loader2, MoreVertical, Mail, Phone, FileText, Pencil, Trash2, Leaf, Beef, Upload, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -69,6 +70,9 @@ export default function GuestsPage() {
     const [sideFilter, setSideFilter] = useState<'all' | 'bride' | 'groom'>('all');
     const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'confirmed' | 'declined'>('all');
     const [searchQuery, setSearchQuery] = useState('');
+    
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
 
     useEffect(() => {
         if (user && database) {
@@ -97,7 +101,7 @@ export default function GuestsPage() {
         let filtered = guests;
         
         if (sideFilter !== 'all') {
-            filtered = filtered.filter(g => g.side === sideFilter);
+            filtered = filtered.filter(g => g.side === sideFilter || g.side === 'both');
         }
 
         if (statusFilter !== 'all') {
@@ -181,6 +185,123 @@ export default function GuestsPage() {
         setFormState(prev => ({ ...prev, [field]: value }));
     };
 
+    const handleDownloadTemplate = () => {
+        const headers = ['name', 'side', 'status', 'group', 'email', 'phone', 'notes', 'diet'];
+        const sampleData = [
+            'John Doe', // name
+            'bride', // side (bride, groom, or both)
+            'pending', // status (pending, confirmed, or declined)
+            'College Friends', // group
+            'john.doe@example.com', // email
+            '123-456-7890', // phone
+            'Allergic to peanuts', // notes
+            'veg' // diet (none, veg, non-veg)
+        ];
+        const csvContent = "data:text/csv;charset=utf-8," 
+            + headers.join(",") + "\n" 
+            + sampleData.join(",");
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "guest_template.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    const handleUploadClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const text = e.target?.result as string;
+            if (!user || !database) return;
+
+            const lines = text.split('\n').filter(line => line.trim() !== '');
+            if (lines.length <= 1) {
+                toast({ variant: 'destructive', title: 'Empty File', description: 'The selected CSV file is empty.' });
+                return;
+            }
+            const headers = lines[0].trim().split(',').map(h => h.trim().toLowerCase());
+            const requiredHeaders = ['name', 'side', 'status'];
+            
+            const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
+            if (missingHeaders.length > 0) {
+                toast({
+                    variant: 'destructive',
+                    title: 'Invalid CSV Template',
+                    description: `Missing columns: ${missingHeaders.join(', ')}. Please download the template.`,
+                });
+                return;
+            }
+            
+            const guestsToUpload: Omit<Guest, 'id'>[] = [];
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].trim().split(',');
+                const guest: Partial<Guest> = {};
+                
+                headers.forEach((header, index) => {
+                    const key = header as keyof Guest;
+                    const value = values[index]?.trim() || '';
+
+                    if (key === 'name' && value) guest.name = value;
+                    if (key === 'group') guest.group = value;
+                    if (key === 'email') guest.email = value;
+                    if (key === 'phone') guest.phone = value;
+                    if (key === 'notes') guest.notes = value;
+                    if (key === 'side' && ['bride', 'groom', 'both'].includes(value)) guest.side = value as Guest['side'];
+                    if (key === 'status' && ['pending', 'confirmed', 'declined'].includes(value)) guest.status = value as Guest['status'];
+                    if (key === 'diet' && ['none', 'veg', 'non-veg'].includes(value)) guest.diet = value as Guest['diet'];
+                });
+                
+                if (guest.name && guest.side && guest.status) {
+                    guestsToUpload.push({
+                        name: guest.name,
+                        side: guest.side,
+                        status: guest.status,
+                        group: guest.group || '',
+                        email: guest.email || '',
+                        phone: guest.phone || '',
+                        notes: guest.notes || '',
+                        diet: guest.diet || 'none',
+                    });
+                }
+            }
+
+            if (guestsToUpload.length === 0) {
+                toast({ variant: 'destructive', title: 'No Guests Found', description: 'The CSV file does not contain valid guest data.' });
+                return;
+            }
+
+            try {
+                const guestsRef = ref(database, `users/${user.uid}/guests`);
+                const updates: { [key: string]: any } = {};
+                guestsToUpload.forEach(guest => {
+                    const newGuestKey = push(guestsRef).key;
+                    if(newGuestKey) {
+                       updates[newGuestKey] = guest;
+                    }
+                });
+
+                await update(ref(database, `users/${user.uid}/guests`), updates);
+
+                toast({ title: 'Upload Successful', description: `${guestsToUpload.length} guests have been added.` });
+            } catch (e) {
+                toast({ variant: 'destructive', title: 'Upload Failed', description: 'An error occurred while uploading guests.' });
+            } finally {
+                if (fileInputRef.current) fileInputRef.current.value = '';
+            }
+        };
+        reader.readAsText(file);
+    };
+
+
     if (loading) {
       return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
     }
@@ -194,14 +315,28 @@ export default function GuestsPage() {
                     </Link>
                     <h2 className="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight flex-1 text-center">Guest List</h2>
                     <div className="flex size-10 items-center justify-end">
-                        <button className="flex cursor-pointer items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors h-10 w-10">
-                            <span className="material-symbols-outlined text-slate-900 dark:text-white">more_vert</span>
-                        </button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                    <MoreVertical className="h-5 w-5" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={handleUploadClick}>
+                                    <Upload className="mr-2 h-4 w-4" />
+                                    <span>Upload CSV</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={handleDownloadTemplate}>
+                                    <Download className="mr-2 h-4 w-4" />
+                                    <span>Download Template</span>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                 </div>
                  <div className="px-4 pb-4">
                     <div className="flex p-1 bg-[#f4f0f1] dark:bg-slate-800 rounded-xl">
-                        <button onClick={() => setSideFilter('all')} className={cn("flex-1 py-2 text-sm font-semibold rounded-lg transition-colors", sideFilter === 'all' ? 'bg-white dark:bg-slate-700 text-primary shadow-sm' : 'text-muted-foreground')}>All Sides</button>
+                        <button onClick={() => setSideFilter('all')} className={cn("flex-1 py-2 text-sm font-semibold rounded-lg transition-colors", sideFilter === 'all' ? 'bg-white dark:bg-slate-700 text-primary shadow-sm' : 'text-muted-foreground')}>All</button>
                         <button onClick={() => setSideFilter('bride')} className={cn("flex-1 py-2 text-sm font-semibold rounded-lg transition-colors", sideFilter === 'bride' ? 'bg-white dark:bg-slate-700 text-primary shadow-sm' : 'text-muted-foreground')}>Bride's</button>
                         <button onClick={() => setSideFilter('groom')} className={cn("flex-1 py-2 text-sm font-semibold rounded-lg transition-colors", sideFilter === 'groom' ? 'bg-white dark:bg-slate-700 text-primary shadow-sm' : 'text-muted-foreground')}>Groom's</button>
                     </div>
@@ -290,7 +425,7 @@ export default function GuestsPage() {
                                             {guest.notes ? (
                                                 <>
                                                 <span className="material-symbols-outlined text-sm text-muted-foreground">sticky_note_2</span>
-                                                <p className="text-muted-foreground text-xs font-normal">{guest.notes}</p>
+                                                <p className="text-muted-foreground text-xs font-normal truncate max-w-40">{guest.notes}</p>
                                                 </>
                                             ) : guest.status === 'declined' ? (
                                                 <>
@@ -330,13 +465,13 @@ export default function GuestsPage() {
                                                 </div>
                                             )}
                                             {guest.phone && (
-                                                <div className="relative flex select-none items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground">
+                                                 <div className="relative flex select-none items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground">
                                                     <Phone className="h-4 w-4" />
                                                     <span>{guest.phone}</span>
                                                 </div>
                                             )}
                                             {guest.notes && (
-                                                <div className="relative flex select-none items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground">
+                                                 <div className="relative flex select-none items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground">
                                                     <FileText className="h-4 w-4" />
                                                     <span className="truncate max-w-48">{guest.notes}</span>
                                                 </div>
@@ -355,6 +490,13 @@ export default function GuestsPage() {
                         </div>
                     )}
                 </div>
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    style={{ display: 'none' }}
+                    accept=".csv"
+                />
             </main>
 
              <Dialog open={isGuestDialogOpen} onOpenChange={setIsGuestDialogOpen}>
@@ -439,6 +581,8 @@ export default function GuestsPage() {
         </div>
     );
 }
+
+    
 
     
 
