@@ -106,9 +106,9 @@ export function InspirationForm() {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="$5,000-$10,000">$5,000 - $10,000</SelectItem>
-                    <SelectItem value="$10,000-$20,000">$10,000 - $20,000</SelectItem>
-                    <SelectItem value="$20,000+">$20,000+</SelectItem>
+                    <SelectItem value="₹50,000-₹1,00,000">₹50,000 - ₹1,00,000</SelectItem>
+                    <SelectItem value="₹1,00,000-₹2,00,000">₹1,00,000 - ₹2,00,000</SelectItem>
+                    <SelectItem value="₹2,00,000+">₹2,00,000+</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />

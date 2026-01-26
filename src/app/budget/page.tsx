@@ -27,7 +27,7 @@ export default function BudgetPage() {
           <div className="flex justify-between items-start mb-6">
             <div>
               <p className="text-muted-foreground text-sm font-medium mb-1">Total Budget</p>
-              <h1 className="text-3xl font-bold tracking-tight text-foreground">$0</h1>
+              <h1 className="text-3xl font-bold tracking-tight text-foreground">₹0</h1>
             </div>
             <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-bold">
               NOT SET
@@ -36,7 +36,7 @@ export default function BudgetPage() {
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1 border-r border-border dark:border-slate-800">
               <p className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Total Spent</p>
-              <p className="text-primary text-xl font-bold">$0</p>
+              <p className="text-primary text-xl font-bold">₹0</p>
               <p className="text-emerald-500 text-xs font-medium flex items-center">
                 <span className="material-symbols-outlined text-xs mr-1">trending_up</span>
                 0% of total
@@ -44,7 +44,7 @@ export default function BudgetPage() {
             </div>
             <div className="flex flex-col gap-1 pl-2">
               <p className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Remaining</p>
-              <p className="text-foreground text-xl font-bold">$0</p>
+              <p className="text-foreground text-xl font-bold">₹0</p>
               <p className="text-muted-foreground text-xs font-medium italic">
                 No expenses yet
               </p>

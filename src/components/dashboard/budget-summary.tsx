@@ -56,7 +56,7 @@ export function BudgetSummary() {
             <div className="flex-1">
                 <p className="text-sm font-medium text-muted-foreground">Spent vs. Remaining</p>
                 <p className="text-xl font-bold">
-                    ${spent.toLocaleString()} / {total > 0 ? `$${total.toLocaleString('en-US', { notation: 'compact', compactDisplay: 'short' })}` : '$0'}
+                    ₹{spent.toLocaleString('en-IN')} / {total > 0 ? `₹${total.toLocaleString('en-IN', { notation: 'compact', compactDisplay: 'short' })}` : '₹0'}
                 </p>
                 <Progress value={percentage} className="mt-2 h-1.5" />
             </div>
