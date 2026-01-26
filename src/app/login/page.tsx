@@ -22,15 +22,11 @@ export default function LoginPage() {
                     <div className="h-1.5 flex-1 rounded-full bg-gray-100"></div>
                     <div className="h-1.5 flex-1 rounded-full bg-gray-100"></div>
                 </div>
-                <div className="flex justify-between items-center max-w-[400px] mx-auto">
-                    <button className="p-2 -ml-2 text-text-dark">
-                        <span className="material-symbols-outlined text-2xl">arrow_back_ios_new</span>
-                    </button>
+                <div className="flex justify-center items-center max-w-[400px] mx-auto h-10">
                     <div className="text-primary font-extrabold text-xl tracking-tight">
                         <span className="material-symbols-outlined align-middle mr-1">favorite</span>
                         WEDDING
                     </div>
-                    <div className="w-10"></div>
                 </div>
             </div>
             <div className="w-full max-w-[400px] px-6 flex flex-col pb-8">
