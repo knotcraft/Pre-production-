@@ -33,21 +33,11 @@ import { useUser, useDatabase } from '@/firebase';
 import { ref, onValue, set, push, remove, update } from 'firebase/database';
 import { toast } from '@/hooks/use-toast';
 import type { Guest } from '@/lib/types';
-import { Loader2, Plus, MoreVertical, Pencil, Trash2, Users, CheckCircle, XCircle, CircleHelp, Search, UserPlus } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
-
-const getStatusProps = (status: Guest['status']) => {
-    switch (status) {
-        case 'confirmed':
-            return { icon: <CheckCircle className="h-5 w-5 text-green-500" />, text: 'Confirmed', color: 'text-green-500' };
-        case 'declined':
-            return { icon: <XCircle className="h-5 w-5 text-destructive" />, text: 'Declined', color: 'text-destructive' };
-        default:
-            return { icon: <CircleHelp className="h-5 w-5 text-slate-500" />, text: 'Pending', color: 'text-slate-500' };
-    }
-}
+const statusFilters: Guest['status'][] = ['pending', 'confirmed', 'declined'];
 
 export default function GuestsPage() {
     const { user } = useUser();
@@ -69,10 +59,11 @@ export default function GuestsPage() {
         status: 'pending',
         group: '',
         email: '',
+        notes: '',
     });
 
     // Filtering and Searching
-    const [sideFilter, setSideFilter] = useState<'all' | 'bride' | 'groom' | 'both'>('all');
+    const [sideFilter, setSideFilter] = useState<'all' | 'bride' | 'groom'>('all');
     const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'confirmed' | 'declined'>('all');
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -103,9 +94,7 @@ export default function GuestsPage() {
         let filtered = guests;
         
         if (sideFilter !== 'all') {
-             if (sideFilter === 'bride' || sideFilter === 'groom') {
-                filtered = filtered.filter(g => g.side === sideFilter || g.side === 'both');
-            }
+            filtered = filtered.filter(g => g.side === sideFilter);
         }
 
         if (statusFilter !== 'all') {
@@ -132,7 +121,7 @@ export default function GuestsPage() {
 
     const openGuestDialog = (guest: Guest | null) => {
         setActiveGuest(guest);
-        setFormState(guest || { name: '', side: 'both', status: 'pending', group: '', email: '' });
+        setFormState(guest || { name: '', side: 'both', status: 'pending', group: '', email: '', notes: '' });
         setIsGuestDialogOpen(true);
     };
 
@@ -198,26 +187,30 @@ export default function GuestsPage() {
                         <span className="material-symbols-outlined">arrow_back_ios_new</span>
                     </Link>
                     <h2 className="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight flex-1 text-center">Guest List</h2>
-                    <div className="flex size-10 items-center justify-end" />
+                    <div className="flex size-10 items-center justify-end">
+                        <button className="flex cursor-pointer items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors h-10 w-10">
+                            <span className="material-symbols-outlined text-slate-900 dark:text-white">more_vert</span>
+                        </button>
+                    </div>
                 </div>
                  <div className="px-4 pb-4">
-                    <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
-                        <button onClick={() => setSideFilter('all')} className={cn("flex-1 py-2 text-sm font-semibold rounded-lg shadow-sm transition-colors", sideFilter === 'all' ? 'bg-white dark:bg-slate-700 text-primary' : 'text-slate-500 dark:text-slate-400')}>All Guests</button>
-                        <button onClick={() => setSideFilter('bride')} className={cn("flex-1 py-2 text-sm font-semibold rounded-lg shadow-sm transition-colors", sideFilter === 'bride' ? 'bg-white dark:bg-slate-700 text-primary' : 'text-slate-500 dark:text-slate-400')}>Bride's</button>
-                        <button onClick={() => setSideFilter('groom')} className={cn("flex-1 py-2 text-sm font-semibold rounded-lg shadow-sm transition-colors", sideFilter === 'groom' ? 'bg-white dark:bg-slate-700 text-primary' : 'text-slate-500 dark:text-slate-400')}>Groom's</button>
+                    <div className="flex p-1 bg-[#f4f0f1] dark:bg-slate-800 rounded-xl">
+                        <button onClick={() => setSideFilter('all')} className={cn("flex-1 py-2 text-sm font-semibold rounded-lg shadow-sm transition-colors", sideFilter === 'all' ? 'bg-white dark:bg-slate-700 text-primary' : 'text-muted-foreground')}>All Sides</button>
+                        <button onClick={() => setSideFilter('bride')} className={cn("flex-1 py-2 text-sm font-semibold rounded-lg shadow-sm transition-colors", sideFilter === 'bride' ? 'bg-white dark:bg-slate-700 text-primary' : 'text-muted-foreground')}>Bride's</button>
+                        <button onClick={() => setSideFilter('groom')} className={cn("flex-1 py-2 text-sm font-semibold rounded-lg shadow-sm transition-colors", sideFilter === 'groom' ? 'bg-white dark:bg-slate-700 text-primary' : 'text-muted-foreground')}>Groom's</button>
                     </div>
                 </div>
                  <div className="flex flex-nowrap gap-3 px-4 pb-4 overflow-x-auto no-scrollbar">
-                    <div className="flex min-w-[110px] flex-1 flex-col gap-1 rounded-xl p-3 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
-                        <p className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider">Total Invited</p>
+                    <div className="flex min-w-[110px] flex-1 flex-col gap-1 rounded-xl p-3 border border-[#e6dbde] dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
+                        <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">Total Invited</p>
                         <p className="text-primary tracking-light text-xl font-bold leading-tight">{summary.total}</p>
                     </div>
-                    <div className="flex min-w-[110px] flex-1 flex-col gap-1 rounded-xl p-3 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
-                        <p className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider">Confirmed</p>
+                    <div className="flex min-w-[110px] flex-1 flex-col gap-1 rounded-xl p-3 border border-[#e6dbde] dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
+                        <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">Confirmed</p>
                         <p className="text-green-600 tracking-light text-xl font-bold leading-tight">{summary.confirmed}</p>
                     </div>
-                    <div className="flex min-w-[110px] flex-1 flex-col gap-1 rounded-xl p-3 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
-                        <p className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider">Pending</p>
+                    <div className="flex min-w-[110px] flex-1 flex-col gap-1 rounded-xl p-3 border border-[#e6dbde] dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
+                        <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">Pending</p>
                         <p className="text-gray-500 tracking-light text-xl font-bold leading-tight">{summary.pending}</p>
                     </div>
                 </div>
@@ -225,64 +218,101 @@ export default function GuestsPage() {
 
             <main className="bg-background-light dark:bg-background-dark pb-24">
                 <div className="px-4 py-3">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                     <div className="relative">
+                        <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground">search</span>
                         <Input 
-                            className="pl-10 h-12 w-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800" 
+                            className="pl-11 h-12 w-full bg-[#f4f0f1] dark:bg-slate-800 border-none rounded-xl"
                             placeholder="Search guests..." 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
                 </div>
+                <div className="flex gap-2 px-4 pb-4 overflow-x-auto no-scrollbar">
+                    <button onClick={() => setStatusFilter('all')} className={cn("flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full px-5 shadow-sm transition-colors", statusFilter === 'all' ? 'bg-primary text-white' : 'bg-[#f4f0f1] dark:bg-gray-800 border border-gray-100 dark:border-gray-700')}>
+                        <p className={cn("text-sm", statusFilter === 'all' ? 'font-semibold' : 'font-medium text-foreground dark:text-gray-300')}>All Guests</p>
+                    </button>
+                    {statusFilters.map(status => (
+                        <button key={status} onClick={() => setStatusFilter(status)} className={cn("flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full px-5 shadow-sm transition-colors", statusFilter === status ? 'bg-primary text-white' : 'bg-[#f4f0f1] dark:bg-gray-800 border border-gray-100 dark:border-gray-700')}>
+                            <p className={cn("text-sm capitalize", statusFilter === status ? 'font-semibold' : 'font-medium text-foreground dark:text-gray-300')}>{status}</p>
+                        </button>
+                    ))}
+                </div>
                 
                 <div className="flex-1 overflow-y-auto px-2">
-                     <div className="px-2 py-2 flex items-center justify-between">
-                        <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-widest">Showing {filteredGuests.length} Guests</p>
+                     <div className="px-3 py-2 flex items-center justify-between">
+                        <p className="text-muted-foreground text-xs font-bold uppercase tracking-widest">Showing {filteredGuests.length} Guests</p>
                     </div>
 
                     {filteredGuests.length === 0 ? (
-                        <div className="text-center p-10 flex flex-col items-center justify-center gap-4 text-slate-500 dark:text-slate-400">
-                             <Users className="h-12 w-12 text-slate-400" />
-                             <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">Your Guest List is Empty</h3>
+                        <div className="text-center p-10 flex flex-col items-center justify-center gap-4 text-muted-foreground">
+                             <span className="material-symbols-outlined text-6xl text-slate-400">groups</span>
+                             <h3 className="text-lg font-semibold text-foreground dark:text-slate-200">Your Guest List is Empty</h3>
                             <p>Click the '+' button to start adding guests to your wedding.</p>
                         </div>
                     ) : (
                         <div className="space-y-2 p-2">
-                            {filteredGuests.map(guest => {
-                                const statusProps = getStatusProps(guest.status);
-                                return (
-                                    <div key={guest.id} className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4 group">
-                                        <Avatar>
-                                            <AvatarFallback className="bg-primary/10 text-primary font-bold">
-                                                {guest.name.charAt(0).toUpperCase()}
-                                            </AvatarFallback>
-                                        </Avatar>
-                                        <div className="flex-1">
-                                            <p className="font-bold text-slate-900 dark:text-white">{guest.name}</p>
-                                            <p className="text-sm text-slate-500 dark:text-slate-400">{guest.group || 'No group'}</p>
+                            {filteredGuests.map(guest => (
+                                <div key={guest.id} className={cn(
+                                    "bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4 group",
+                                    guest.status === 'declined' && 'opacity-60'
+                                )}>
+                                    <Avatar>
+                                        <AvatarFallback className="bg-primary/10 text-primary font-bold">
+                                            {guest.name.charAt(0).toUpperCase()}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2">
+                                            <p className="font-bold text-foreground">{guest.name}</p>
+                                            {guest.side !== 'both' && (
+                                                <span className={cn(
+                                                    "text-[10px] font-bold px-1.5 py-0.5 rounded border uppercase",
+                                                    guest.side === 'bride' ? 'bg-pink-50 text-pink-500 border-pink-100' : 'bg-blue-50 text-blue-500 border-blue-100'
+                                                )}>{guest.side}</span>
+                                            )}
                                         </div>
-                                        <div className={`flex items-center gap-2 text-sm font-semibold ${statusProps.color}`}>
-                                            {statusProps.icon}
+                                        <div className="flex items-center gap-2 mt-1">
+                                            {guest.notes ? (
+                                                <>
+                                                <span className="material-symbols-outlined text-sm text-muted-foreground">restaurant</span>
+                                                <p className="text-muted-foreground text-xs font-normal">{guest.notes}</p>
+                                                </>
+                                            ) : guest.status === 'declined' ? (
+                                                <>
+                                                <span className="material-symbols-outlined text-sm text-muted-foreground">close</span>
+                                                <p className="text-muted-foreground text-xs font-normal">Cannot Attend</p>
+                                                </>
+                                            ) : null}
                                         </div>
-                                         <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100">
-                                                <MoreVertical className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onClick={() => openGuestDialog(guest)}>
-                                                <Pencil className="mr-2 h-4 w-4" /> Edit
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => openDeleteDialog(guest)} className="text-destructive">
-                                                <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
                                     </div>
-                                );
-                            })}
+                                    <div className="flex flex-col items-end gap-1">
+                                        <span className={cn(
+                                            "px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
+                                            guest.status === 'confirmed' && 'bg-green-100 text-green-700',
+                                            guest.status === 'pending' && 'bg-gray-100 text-gray-600',
+                                            guest.status === 'declined' && 'bg-red-50 text-red-600'
+                                        )}>
+                                            {guest.status}
+                                        </span>
+                                    </div>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 absolute right-2 top-2">
+                                                <span className="material-symbols-outlined text-base">more_vert</span>
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem onClick={() => openGuestDialog(guest)}>
+                                            <span className="material-symbols-outlined text-base mr-2">edit</span> Edit
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => openDeleteDialog(guest)} className="text-destructive">
+                                            <span className="material-symbols-outlined text-base mr-2">delete</span> Delete
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
+                            ))}
                         </div>
                     )}
                 </div>
@@ -324,7 +354,7 @@ export default function GuestsPage() {
                         </div>
                          <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="notes" className="text-right">Notes</Label>
-                             <Textarea id="notes" value={formState.notes || ''} onChange={(e) => handleFormChange('notes', e.target.value)} className="col-span-3" placeholder="e.g. dietary restrictions, seating preferences"/>
+                             <Textarea id="notes" value={formState.notes || ''} onChange={(e) => handleFormChange('notes', e.target.value)} className="col-span-3" placeholder="e.g. Party of 2, dietary restrictions"/>
                         </div>
                     </div>
                     <DialogFooter>
@@ -350,7 +380,7 @@ export default function GuestsPage() {
 
             <div className="fixed bottom-28 right-6 z-30">
                 <Button onClick={() => openGuestDialog(null)} className="w-14 h-14 rounded-full shadow-lg shadow-primary/30 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform">
-                    <UserPlus className="h-6 w-6" />
+                    <span className="material-symbols-outlined text-3xl">add</span>
                 </Button>
             </div>
         </div>
