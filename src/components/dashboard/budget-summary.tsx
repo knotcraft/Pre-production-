@@ -23,7 +23,12 @@ export function BudgetSummary() {
           const totalBudget = data.total || 0;
           let totalSpent = 0;
           if (data.categories) {
-            totalSpent = Object.values(data.categories).reduce((sum: number, cat: any) => sum + (cat.spent || 0), 0);
+            totalSpent = Object.values(data.categories).reduce((sum: number, cat: any) => {
+                const categorySpent = cat.expenses 
+                  ? Object.values(cat.expenses).reduce((expenseSum: number, expense: any) => expenseSum + (expense.amount || 0), 0)
+                  : 0;
+                return sum + categorySpent;
+            }, 0);
           }
           setBudget({ total: totalBudget, spent: totalSpent });
         } else {
