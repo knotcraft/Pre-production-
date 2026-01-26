@@ -24,4 +24,15 @@ export interface BudgetData {
   categories?: Record<string, CategoryInDB>;
 }
 
+export interface Guest {
+  id: string;
+  name: string;
+  side: 'bride' | 'groom' | 'both';
+  status: 'pending' | 'confirmed' | 'declined';
+  group?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  notes?: string;
+}
     
