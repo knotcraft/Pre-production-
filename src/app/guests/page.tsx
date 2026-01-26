@@ -26,13 +26,8 @@ import {
     DropdownMenuItem,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
+    DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from '@/components/ui/tooltip';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
@@ -41,7 +36,7 @@ import { useUser, useDatabase } from '@/firebase';
 import { ref, onValue, set, push, remove, update } from 'firebase/database';
 import { toast } from '@/hooks/use-toast';
 import type { Guest } from '@/lib/types';
-import { Loader2, MoreVertical, Mail, Phone, FileText, Pencil, Trash2, Leaf, Beef, Upload, Download, XCircle } from 'lucide-react';
+import { Loader2, MoreVertical, Mail, Phone, FileText, Pencil, Trash2, Leaf, Beef, Upload, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -409,7 +404,7 @@ export default function GuestsPage() {
                         <div className="space-y-2 p-2">
                             {filteredGuests.map(guest => (
                                 <div key={guest.id} className={cn(
-                                    "bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4 group",
+                                    "bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4",
                                     guest.status === 'declined' && 'opacity-60'
                                 )}>
                                     <Avatar>
@@ -427,36 +422,15 @@ export default function GuestsPage() {
                                                 )}>{guest.side}</span>
                                             )}
                                         </div>
-                                        <div className="flex items-center gap-3 mt-1.5 text-muted-foreground">
-                                            <TooltipProvider>
-                                                {guest.diet && guest.diet !== 'none' && (
-                                                    <div className="flex items-center gap-1">
-                                                        {guest.diet === 'veg' ? <Leaf className="h-4 w-4 text-green-500" /> : <Beef className="h-4 w-4 text-orange-500" />}
-                                                    </div>
-                                                )}
-                                                {guest.notes && (
-                                                    <Tooltip>
-                                                        <TooltipTrigger><FileText className="h-4 w-4" /></TooltipTrigger>
-                                                        <TooltipContent><p>{guest.notes}</p></TooltipContent>
-                                                    </Tooltip>
-                                                )}
-                                                {guest.email && (
-                                                    <Tooltip>
-                                                        <TooltipTrigger><Mail className="h-4 w-4" /></TooltipTrigger>
-                                                        <TooltipContent><p>{guest.email}</p></TooltipContent>
-                                                    </Tooltip>
-                                                )}
-                                                {guest.phone && (
-                                                    <Tooltip>
-                                                        <TooltipTrigger><Phone className="h-4 w-4" /></TooltipTrigger>
-                                                        <TooltipContent><p>{guest.phone}</p></TooltipContent>
-                                                    </Tooltip>
-                                                )}
-                                            </TooltipProvider>
-                                            {!guest.notes && guest.status === 'declined' && (
+                                        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                                            {guest.group && (
+                                                <span className="font-medium">{guest.group}</span>
+                                            )}
+                                            {guest.group && guest.diet && guest.diet !== 'none' && <span className="text-slate-300 dark:text-slate-700">&bull;</span>}
+                                            {guest.diet && guest.diet !== 'none' && (
                                                 <div className="flex items-center gap-1">
-                                                   <XCircle className="h-4 w-4" />
-                                                   <p className="text-xs font-normal">Cannot Attend</p>
+                                                    {guest.diet === 'veg' ? <Leaf className="h-3 w-3 text-green-500" /> : <Beef className="h-3 w-3 text-orange-500" />}
+                                                    <span className="capitalize">{guest.diet}</span>
                                                 </div>
                                             )}
                                         </div>
@@ -470,14 +444,40 @@ export default function GuestsPage() {
                                         )}>
                                             {guest.status}
                                         </span>
-                                        <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openGuestDialog(guest)}>
-                                                <Pencil className="h-4 w-4" />
-                                            </Button>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => openDeleteDialog(guest)}>
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </div>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                    <MoreVertical className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                {guest.email && (
+                                                    <DropdownMenuLabel className="flex items-center gap-2 font-normal text-muted-foreground px-2 py-1.5">
+                                                        <Mail className="h-4 w-4 shrink-0" />
+                                                        <span className="truncate">{guest.email}</span>
+                                                    </DropdownMenuLabel>
+                                                )}
+                                                {guest.phone && (
+                                                    <DropdownMenuLabel className="flex items-center gap-2 font-normal text-muted-foreground px-2 py-1.5">
+                                                        <Phone className="h-4 w-4 shrink-0" />
+                                                        <span className="truncate">{guest.phone}</span>
+                                                    </DropdownMenuLabel>
+                                                )}
+                                                {guest.notes && (
+                                                    <DropdownMenuLabel className="flex items-center gap-2 font-normal text-muted-foreground px-2 py-1.5">
+                                                        <FileText className="h-4 w-4 shrink-0" />
+                                                        <span className="truncate">{guest.notes}</span>
+                                                    </DropdownMenuLabel>
+                                                )}
+                                                {(guest.email || guest.phone || guest.notes) && <DropdownMenuSeparator />}
+                                                <DropdownMenuItem onClick={() => openGuestDialog(guest)}>
+                                                    <Pencil className="mr-2 h-4 w-4" /> Edit
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => openDeleteDialog(guest)} className="text-destructive">
+                                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
                                     </div>
                                 </div>
                             ))}
@@ -575,4 +575,6 @@ export default function GuestsPage() {
         </div>
     );
 }
+    
+
     
