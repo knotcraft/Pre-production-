@@ -13,7 +13,7 @@ const GoogleIcon = () => (
 );
 
 
-export default function LoginPage() {
+export default function SignupPage() {
     return (
         <div className="flex min-h-screen w-full flex-col items-center bg-white text-text-dark font-sans antialiased">
             <div className="w-full pt-8 px-6">
@@ -24,11 +24,13 @@ export default function LoginPage() {
                     </div>
                 </div>
             </div>
+
             <div className="w-full max-w-[400px] px-6 flex flex-col pb-8">
                 <div className="my-8">
-                    <h1 className="text-4xl font-extrabold tracking-tight mb-3">Welcome back</h1>
-                    <p className="text-text-muted text-lg font-medium">Log in to your wedding dashboard</p>
+                    <h1 className="text-4xl font-extrabold tracking-tight mb-3">Create Account</h1>
+                    <p className="text-text-muted text-lg font-medium">Start planning your big day!</p>
                 </div>
+
                 <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
                     <div className="space-y-2">
                         <label className="text-sm font-bold uppercase tracking-wider text-text-dark">Email Address</label>
@@ -36,32 +38,53 @@ export default function LoginPage() {
                             <input className="border-border-light bg-white focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200 outline-none w-full h-14 px-5 rounded-lg text-base font-medium placeholder:text-gray-400 border" placeholder="e.g. name@email.com" type="email" />
                         </div>
                     </div>
+
                     <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                            <label className="text-sm font-bold uppercase tracking-wider text-text-dark">Password</label>
-                        </div>
+                        <label className="text-sm font-bold uppercase tracking-wider text-text-dark">Password</label>
                         <div className="relative">
                             <input className="border-border-light bg-white focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200 outline-none w-full h-14 px-5 rounded-lg text-base font-medium placeholder:text-gray-400 border" placeholder="••••••••" type="password" />
                             <button className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" type="button">
                                 <span className="material-symbols-outlined">visibility</span>
                             </button>
                         </div>
-                        <div className="flex justify-end pt-1">
-                            <Link href="#" className="text-sm font-bold text-primary hover:underline">Forgot Password?</Link>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-bold uppercase tracking-wider text-text-dark">Mobile Number</label>
+                        <div className="relative">
+                            <input className="border-border-light bg-white focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200 outline-none w-full h-14 px-5 rounded-lg text-base font-medium placeholder:text-gray-400 border" placeholder="+1 (555) 555-5555" type="tel" />
                         </div>
                     </div>
+
+                    <div className="flex gap-4">
+                        <div className="space-y-2 flex-1">
+                            <label className="text-sm font-bold uppercase tracking-wider text-text-dark">Email OTP</label>
+                            <div className="relative">
+                                <input className="border-border-light bg-white focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200 outline-none w-full h-14 px-5 rounded-lg text-base font-medium placeholder:text-gray-400 border" placeholder="123456" type="text" />
+                            </div>
+                        </div>
+                        <div className="space-y-2 flex-1">
+                            <label className="text-sm font-bold uppercase tracking-wider text-text-dark">Mobile OTP</label>
+                            <div className="relative">
+                                <input className="border-border-light bg-white focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200 outline-none w-full h-14 px-5 rounded-lg text-base font-medium placeholder:text-gray-400 border" placeholder="123456" type="text" />
+                            </div>
+                        </div>
+                    </div>
+
+
                     <div className="pt-2">
                         <button className="w-full h-14 bg-primary hover:bg-primary-hover text-white font-extrabold text-lg rounded-lg shadow-lg shadow-primary/20 transition-all active:scale-[0.98]">
-                            Continue
+                            Sign Up
                         </button>
                     </div>
                 </form>
-                <div className="mt-10">
+
+                <div className="mt-8">
                     <div className="relative mb-8 text-center">
                         <div className="absolute inset-0 flex items-center">
                             <div className="w-full border-t border-gray-100"></div>
                         </div>
-                        <span className="relative bg-white px-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Or login with</span>
+                        <span className="relative bg-white px-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Or sign up with</span>
                     </div>
                     <div className="grid grid-cols-1 gap-4">
                         <button className="flex items-center justify-center gap-3 h-14 rounded-lg border border-border-light hover:bg-gray-50 transition-colors font-bold text-text-dark">
@@ -70,10 +93,11 @@ export default function LoginPage() {
                         </button>
                     </div>
                 </div>
+
                 <div className="mt-8 text-center">
                     <p className="text-text-muted font-medium">
-                        New to the platform?
-                        <Link href="/signup" className="font-extrabold text-primary ml-1">Create Account</Link>
+                        Already have an account?
+                        <Link href="/login" className="font-extrabold text-primary ml-1">Log In</Link>
                     </p>
                 </div>
             </div>
