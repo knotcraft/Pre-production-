@@ -484,7 +484,7 @@ export default function BudgetPage() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteCategory} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
           </AlertDialogFooter>
-        </DialogContent>
+        </AlertDialogContent>
       </AlertDialog>
 
       <div className="fixed bottom-28 right-6 z-30">
