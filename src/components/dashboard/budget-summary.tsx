@@ -1,16 +1,43 @@
+'use client';
 import { Progress } from '@/components/ui/progress';
+import { useFirebase, useUser } from '@/firebase';
+import { ref, get } from 'firebase/database';
+import { useEffect, useState } from 'react';
+
+type BudgetData = {
+    total: number;
+    spent: number;
+};
 
 export function BudgetSummary() {
-  const spent = 12400;
-  const total = 25000;
-  const percentage = Math.round((spent / total) * 100);
+  const { user } = useUser();
+  const { database } = useFirebase();
+  const [budget, setBudget] = useState<BudgetData>({ total: 0, spent: 0 });
+
+  useEffect(() => {
+    if (user && database) {
+      const fetchBudgetData = async () => {
+        const budgetRef = ref(database, 'users/' + user.uid + '/budget');
+        const snapshot = await get(budgetRef);
+        if (snapshot.exists()) {
+          setBudget(snapshot.val() as BudgetData);
+        }
+      };
+      fetchBudgetData();
+    }
+  }, [user, database]);
+  
+  const { spent, total } = budget;
+  const percentage = total > 0 ? Math.round((spent / total) * 100) : 0;
   const circumference = 2 * Math.PI * 40; // 2 * pi * r
 
   return (
     <div className="rounded-xl border border-primary/10 bg-card p-6 shadow-lg dark:bg-card/50">
         <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-bold">Budget Progress</h3>
-            <span className="text-xs font-bold uppercase tracking-wider text-primary">On Track</span>
+            <span className={`text-xs font-bold uppercase tracking-wider ${total > 0 ? 'text-primary' : 'text-muted-foreground'}`}>
+              {total > 0 ? 'On Track' : 'Not Set'}
+            </span>
         </div>
         <div className="flex items-center gap-6">
             <div className="relative flex h-24 w-24 items-center justify-center">
@@ -29,7 +56,7 @@ export function BudgetSummary() {
             <div className="flex-1">
                 <p className="text-sm font-medium text-muted-foreground">Spent vs. Remaining</p>
                 <p className="text-xl font-bold">
-                    ${spent.toLocaleString()} / ${total.toLocaleString('en-US', { notation: 'compact', compactDisplay: 'short' })}
+                    ${spent.toLocaleString()} / {total > 0 ? `$${total.toLocaleString('en-US', { notation: 'compact', compactDisplay: 'short' })}` : '$0'}
                 </p>
                 <Progress value={percentage} className="mt-2 h-1.5" />
             </div>
