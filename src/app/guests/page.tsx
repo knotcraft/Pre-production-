@@ -57,7 +57,7 @@ export default function GuestsPage() {
     
     // Dialog states
     const [isGuestDialogOpen, setIsGuestDialogOpen] = useState(false);
-    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [guestToDelete, setGuestToDelete] = useState<Guest | null>(null);
     
     // Active item state
     const [activeGuest, setActiveGuest] = useState<Guest | null>(null);
@@ -172,20 +172,15 @@ export default function GuestsPage() {
         }
     };
 
-    const openDeleteDialog = (guest: Guest) => {
-        setActiveGuest(guest);
-        setIsDeleteDialogOpen(true);
-    };
-
-    const handleDeleteGuest = async () => {
-        if (!user || !database || !activeGuest) return;
+    const handleConfirmDelete = async () => {
+        if (!user || !database || !guestToDelete) return;
         try {
-            await remove(ref(database, `users/${user.uid}/guests/${activeGuest.id}`));
+            await remove(ref(database, `users/${user.uid}/guests/${guestToDelete.id}`));
             toast({ title: 'Success', description: 'Guest deleted.' });
-            setIsDeleteDialogOpen(false);
-            setActiveGuest(null);
         } catch (e) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not delete guest.' });
+        } finally {
+            setGuestToDelete(null);
         }
     };
     
@@ -476,16 +471,16 @@ export default function GuestsPage() {
                                                 {(guest.email || guest.phone || guest.notes) && (
                                                     <>
                                                         <DropdownMenuLabel className="font-normal text-muted-foreground">Contact Info</DropdownMenuLabel>
-                                                        {guest.email && <DropdownMenuItem disabled className="gap-2"><Mail/>{guest.email}</DropdownMenuItem>}
-                                                        {guest.phone && <DropdownMenuItem disabled className="gap-2"><Phone/>{guest.phone}</DropdownMenuItem>}
-                                                        {guest.notes && <DropdownMenuItem disabled className="gap-2"><FileText/>{guest.notes}</DropdownMenuItem>}
+                                                        {guest.email && <div className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none"><Mail/>{guest.email}</div>}
+                                                        {guest.phone && <div className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none"><Phone/>{guest.phone}</div>}
+                                                        {guest.notes && <div className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none"><FileText/>{guest.notes}</div>}
                                                         <DropdownMenuSeparator />
                                                     </>
                                                 )}
                                                 <DropdownMenuItem onSelect={() => openGuestDialog(guest)}>
                                                     <Pencil className="mr-2 h-4 w-4" /> Edit
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem onSelect={() => openDeleteDialog(guest)} className="text-destructive">
+                                                <DropdownMenuItem onSelect={() => setGuestToDelete(guest)} className="text-destructive">
                                                     <Trash2 className="mr-2 h-4 w-4" /> Delete
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
@@ -558,17 +553,17 @@ export default function GuestsPage() {
                 </DialogContent>
             </Dialog>
 
-             <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            <AlertDialog open={!!guestToDelete} onOpenChange={(isOpen) => !isOpen && setGuestToDelete(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the guest "{activeGuest?.name}".
+                            This action cannot be undone. This will permanently delete the guest "{guestToDelete?.name}".
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeleteGuest} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                        <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
@@ -581,7 +576,3 @@ export default function GuestsPage() {
         </div>
     );
 }
-
-    
-
-    
