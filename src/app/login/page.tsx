@@ -63,14 +63,10 @@ export default function LoginPage() {
                         </div>
                         <span className="relative bg-white px-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Or login with</span>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4">
                         <button className="flex items-center justify-center gap-3 h-14 rounded-lg border border-border-light hover:bg-gray-50 transition-colors font-bold text-text-dark">
                             <GoogleIcon />
                             Google
-                        </button>
-                        <button className="flex items-center justify-center gap-3 h-14 rounded-lg border border-border-light hover:bg-gray-50 transition-colors font-bold text-text-dark">
-                            <span className="material-symbols-outlined text-2xl">ios</span>
-                            Apple
                         </button>
                     </div>
                 </div>
