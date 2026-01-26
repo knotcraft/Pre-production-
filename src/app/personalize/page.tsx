@@ -2,21 +2,40 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { differenceInDays } from 'date-fns';
+import { differenceInDays, format } from 'date-fns';
+import { useUser, useFirebase } from '@/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
+
 
 export default function PersonalizePage() {
+  const { user, loading: userLoading } = useUser();
+  const { firestore } = useFirebase();
+  const router = useRouter();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
+
   const defaultDate = new Date();
   defaultDate.setFullYear(defaultDate.getFullYear() + 1);
   const formattedDefaultDate = defaultDate.toISOString().split('T')[0];
 
+  const [yourName, setYourName] = useState('');
+  const [partnerName, setPartnerName] = useState('');
   const [weddingDate, setWeddingDate] = useState(formattedDefaultDate);
   const [daysLeft, setDaysLeft] = useState(365);
+  
+  useEffect(() => {
+    if (user?.displayName) {
+        setYourName(user.displayName);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (weddingDate) {
       const target = new Date(weddingDate);
       const today = new Date();
-      // To get whole days, we should probably reset the time part of both dates
       target.setHours(0, 0, 0, 0);
       today.setHours(0, 0, 0, 0);
       setDaysLeft(differenceInDays(target, today));
@@ -30,15 +49,55 @@ export default function PersonalizePage() {
   const getFormattedDate = () => {
     if (!weddingDate) return '';
     const date = new Date(weddingDate);
-    // Adjust for timezone offset to prevent date from showing as the previous day
     const timezoneOffset = date.getTimezoneOffset() * 60000;
     const adjustedDate = new Date(date.getTime() + timezoneOffset);
-    return adjustedDate.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+    return format(adjustedDate, 'MMMM d, yyyy');
   };
+
+  const handleFinishSetup = async () => {
+    if (!user || !firestore) {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "You must be logged in to do that.",
+        });
+        return;
+    }
+    if (!yourName || !partnerName || !weddingDate) {
+        toast({
+            variant: "destructive",
+            title: "Missing Information",
+            description: "Please fill out all fields.",
+        });
+        return;
+    }
+
+    setIsLoading(true);
+
+    try {
+        const userDocRef = doc(firestore, 'users', user.uid);
+        await setDoc(userDocRef, {
+            name: yourName,
+            partnerName: partnerName,
+            weddingDate: weddingDate,
+        }, { merge: true });
+
+        toast({
+            title: "Details Saved!",
+            description: "Your wedding plan is ready.",
+        });
+        router.push('/');
+
+    } catch (error: any) {
+        toast({
+            variant: "destructive",
+            title: "Uh oh! Something went wrong.",
+            description: error.message || "Could not save your details.",
+        });
+    } finally {
+        setIsLoading(false);
+    }
+  }
 
 
   return (
@@ -76,7 +135,12 @@ export default function PersonalizePage() {
         <div className="flex flex-col w-full py-3">
           <label className="flex flex-col w-full">
             <p className="text-[#181113] dark:text-white text-sm font-semibold leading-normal pb-2">Your Name</p>
-            <input className="form-input flex w-full rounded-lg text-[#181113] dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-[#e6dbde] dark:border-white/10 bg-white dark:bg-white/5 h-14 placeholder:text-[#89616b] p-[15px] text-base font-normal" placeholder="Jane Doe" />
+            <input 
+                className="form-input flex w-full rounded-lg text-[#181113] dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-[#e6dbde] dark:border-white/10 bg-white dark:bg-white/5 h-14 placeholder:text-[#89616b] p-[15px] text-base font-normal" 
+                placeholder="Jane Doe"
+                value={yourName}
+                onChange={(e) => setYourName(e.target.value)}
+            />
           </label>
         </div>
 
@@ -84,7 +148,12 @@ export default function PersonalizePage() {
         <div className="flex flex-col w-full py-3">
           <label className="flex flex-col w-full">
             <p className="text-[#181113] dark:text-white text-sm font-semibold leading-normal pb-2">Partner's Name</p>
-            <input className="form-input flex w-full rounded-lg text-[#181113] dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-[#e6dbde] dark:border-white/10 bg-white dark:bg-white/5 h-14 placeholder:text-[#89616b] p-[15px] text-base font-normal" placeholder="Alex Smith" />
+            <input 
+                className="form-input flex w-full rounded-lg text-[#181113] dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-[#e6dbde] dark:border-white/10 bg-white dark:bg-white/5 h-14 placeholder:text-[#89616b] p-[15px] text-base font-normal" 
+                placeholder="Alex Smith"
+                value={partnerName}
+                onChange={(e) => setPartnerName(e.target.value)}
+            />
           </label>
         </div>
 
@@ -119,12 +188,15 @@ export default function PersonalizePage() {
 
       {/* Footer / Action Button */}
       <div className="p-6 pb-10 bg-white dark:bg-background-dark">
-        <Link href="/" passHref>
-          <button className="w-full h-14 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl transition-colors shadow-lg shadow-primary/20 flex items-center justify-center gap-2">
+          <button 
+            onClick={handleFinishSetup}
+            className="w-full h-14 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl transition-colors shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
+            disabled={isLoading}
+          >
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             <span>Finish Setup</span>
             <span className="material-symbols-outlined text-sm">check_circle</span>
           </button>
-        </Link>
         {/* Safe area indicator spacer (iOS) */}
         <div className="h-2 w-32 bg-gray-200 dark:bg-white/10 mx-auto mt-6 rounded-full"></div>
       </div>

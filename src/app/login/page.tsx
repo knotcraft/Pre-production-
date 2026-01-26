@@ -1,6 +1,30 @@
 'use client';
 
 import Link from 'next/link';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { useAuth, useFirebase } from '@/firebase';
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
+import { useState } from 'react';
+import { Loader2 } from 'lucide-react';
+
+const formSchema = z.object({
+  email: z.string().email('Invalid email address.'),
+  password: z.string().min(6, 'Password must be at least 6 characters.'),
+});
 
 const GoogleIcon = () => (
     <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -14,6 +38,55 @@ const GoogleIcon = () => (
 
 
 export default function LoginPage() {
+    const { auth } = useFirebase();
+    const router = useRouter();
+    const { toast } = useToast();
+    const [isLoading, setIsLoading] = useState(false);
+    const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+    
+    const form = useForm<z.infer<typeof formSchema>>({
+        resolver: zodResolver(formSchema),
+        defaultValues: {
+            email: '',
+            password: '',
+        },
+    });
+
+    async function onSubmit(values: z.infer<typeof formSchema>) {
+        if (!auth) return;
+        setIsLoading(true);
+        try {
+            await signInWithEmailAndPassword(auth, values.email, values.password);
+            router.push('/');
+        } catch (error: any) {
+            toast({
+                variant: 'destructive',
+                title: 'Login Failed',
+                description: error.message,
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    }
+    
+    async function handleGoogleSignIn() {
+        if (!auth) return;
+        setIsGoogleLoading(true);
+        try {
+            const provider = new GoogleAuthProvider();
+            await signInWithPopup(auth, provider);
+            router.push('/personalize');
+        } catch (error: any) {
+            toast({
+                variant: 'destructive',
+                title: 'Google Sign-In Failed',
+                description: error.message,
+            });
+        } finally {
+            setIsGoogleLoading(false);
+        }
+    }
+    
     return (
         <div className="flex min-h-screen w-full flex-col items-center bg-white text-text-dark font-sans antialiased">
             <div className="w-full pt-8 px-6">
@@ -29,33 +102,54 @@ export default function LoginPage() {
                     <h1 className="text-4xl font-extrabold tracking-tight mb-3">Welcome back</h1>
                     <p className="text-text-muted text-lg font-medium">Log in to your wedding dashboard</p>
                 </div>
-                <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
-                    <div className="space-y-2">
-                        <label className="text-sm font-bold uppercase tracking-wider text-text-dark">Email Address</label>
-                        <div className="relative">
-                            <input className="border-border-light bg-white focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200 outline-none w-full h-14 px-5 rounded-lg text-base font-medium placeholder:text-gray-400 border" placeholder="e.g. name@email.com" type="email" />
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                        <FormField
+                            control={form.control}
+                            name="email"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="text-sm font-bold uppercase tracking-wider text-text-dark">Email Address</FormLabel>
+                                    <FormControl>
+                                        <Input className="border-border-light bg-white focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200 outline-none w-full h-14 px-5 rounded-lg text-base font-medium placeholder:text-gray-400 border" placeholder="e.g. name@email.com" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="password"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <div className="flex justify-between items-center">
+                                        <FormLabel className="text-sm font-bold uppercase tracking-wider text-text-dark">Password</FormLabel>
+                                    </div>
+                                    <FormControl>
+                                      <div className="relative">
+                                          <Input className="border-border-light bg-white focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200 outline-none w-full h-14 px-5 rounded-lg text-base font-medium placeholder:text-gray-400 border" type="password" placeholder="••••••••" {...field} />
+                                          <button className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" type="button">
+                                              <span className="material-symbols-outlined">visibility</span>
+                                          </button>
+                                      </div>
+                                    </FormControl>
+                                    <FormMessage />
+                                    <div className="flex justify-end pt-1">
+                                      <Link href="/forgot-password" className="text-sm font-bold text-primary hover:underline">Forgot Password?</Link>
+                                    </div>
+                                </FormItem>
+                            )}
+                        />
+                        
+                        <div className="pt-2">
+                            <Button type="submit" className="w-full h-14 bg-primary hover:bg-primary-hover text-white font-extrabold text-lg rounded-lg shadow-lg shadow-primary/20 transition-all active:scale-[0.98]" disabled={isLoading}>
+                                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Continue
+                            </Button>
                         </div>
-                    </div>
-                    <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                            <label className="text-sm font-bold uppercase tracking-wider text-text-dark">Password</label>
-                        </div>
-                        <div className="relative">
-                            <input className="border-border-light bg-white focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200 outline-none w-full h-14 px-5 rounded-lg text-base font-medium placeholder:text-gray-400 border" placeholder="••••••••" type="password" />
-                            <button className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" type="button">
-                                <span className="material-symbols-outlined">visibility</span>
-                            </button>
-                        </div>
-                        <div className="flex justify-end pt-1">
-                            <Link href="/forgot-password" className="text-sm font-bold text-primary hover:underline">Forgot Password?</Link>
-                        </div>
-                    </div>
-                    <div className="pt-2">
-                        <button className="w-full h-14 bg-primary hover:bg-primary-hover text-white font-extrabold text-lg rounded-lg shadow-lg shadow-primary/20 transition-all active:scale-[0.98]">
-                            Continue
-                        </button>
-                    </div>
-                </form>
+                    </form>
+                </Form>
                 <div className="mt-10">
                     <div className="relative mb-8 text-center">
                         <div className="absolute inset-0 flex items-center">
@@ -64,10 +158,10 @@ export default function LoginPage() {
                         <span className="relative bg-white px-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Or login with</span>
                     </div>
                     <div className="grid grid-cols-1 gap-4">
-                        <button className="flex items-center justify-center gap-3 h-14 rounded-lg border border-border-light hover:bg-gray-50 transition-colors font-bold text-text-dark">
-                            <GoogleIcon />
+                        <Button onClick={handleGoogleSignIn} className="flex items-center justify-center gap-3 h-14 rounded-lg border border-border-light hover:bg-gray-50 transition-colors font-bold text-text-dark" disabled={isGoogleLoading}>
+                            {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon />}
                             Google
-                        </button>
+                        </Button>
                     </div>
                 </div>
                 <div className="mt-8 text-center">

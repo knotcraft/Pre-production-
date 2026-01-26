@@ -1,12 +1,45 @@
+'use client';
+
 import Image from 'next/image';
-import { Bell } from 'lucide-react';
+import { Bell, LogOut } from 'lucide-react';
 import { CountdownTimer } from '@/components/dashboard/countdown-timer';
 import { Button } from '@/components/ui/button';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { useUser, useFirebase } from '@/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
+
+type UserData = {
+    name: string;
+    partnerName: string;
+    weddingDate: string;
+};
 
 export function Header() {
+  const { user } = useUser();
+  const { firestore, auth } = useFirebase();
+  const [userData, setUserData] = useState<UserData | null>(null);
+
+  useEffect(() => {
+    if (user && firestore) {
+      const fetchUserData = async () => {
+        const userDocRef = doc(firestore, 'users', user.uid);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+          setUserData(userDoc.data() as UserData);
+        }
+      };
+      fetchUserData();
+    }
+  }, [user, firestore]);
+
   const heroImage = PlaceHolderImages.find(img => img.id === 'wedding-hero');
-  const weddingDate = '2025-09-26T14:00:00';
+
+  const handleSignOut = async () => {
+    if (auth) {
+      await auth.signOut();
+    }
+  };
 
   return (
     <div className="relative h-80 w-full overflow-hidden">
@@ -23,13 +56,21 @@ export function Header() {
       <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-black/60" />
       <div className="relative z-10 flex h-full flex-col justify-between p-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold tracking-tight text-white">Our Big Day</h1>
-          <Button variant="ghost" size="icon" className="text-white bg-white/20 rounded-full backdrop-blur-sm hover:bg-white/30 hover:text-white">
-            <Bell />
-            <span className="sr-only">Notifications</span>
-          </Button>
+          <h1 className="text-2xl font-bold tracking-tight text-white">
+            {userData ? `${userData.name} & ${userData.partnerName}` : 'Our Big Day'}
+          </h1>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="text-white bg-white/20 rounded-full backdrop-blur-sm hover:bg-white/30 hover:text-white">
+              <Bell />
+              <span className="sr-only">Notifications</span>
+            </Button>
+            <Button onClick={handleSignOut} variant="ghost" size="icon" className="text-white bg-white/20 rounded-full backdrop-blur-sm hover:bg-white/30 hover:text-white">
+              <LogOut />
+              <span className="sr-only">Sign Out</span>
+            </Button>
+          </div>
         </div>
-        <CountdownTimer targetDate={weddingDate} />
+        {userData?.weddingDate && <CountdownTimer targetDate={userData.weddingDate} />}
       </div>
     </div>
   );

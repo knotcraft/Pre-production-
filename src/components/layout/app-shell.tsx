@@ -1,26 +1,44 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { BottomNav } from '@/components/layout/bottom-nav';
 import { useState, useEffect } from 'react';
+import { useUser } from '@/firebase';
+import { Loader2 } from 'lucide-react';
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const [isClient, setIsClient] = useState(false);
+  const { user, loading } = useUser();
+  const router = useRouter();
+  const pathname = usePathname();
+  const isAuthPage = pathname === '/login' || pathname === '/signup' || pathname === '/forgot-password';
+  const isPersonalizePage = pathname === '/personalize';
 
   useEffect(() => {
-    setIsClient(true);
-  }, []);
+    if (!loading && !user && !isAuthPage) {
+      router.push('/login');
+    }
+     if (!loading && user && isAuthPage) {
+      router.push('/');
+    }
+  }, [user, loading, router, isAuthPage, pathname]);
 
-  const pathname = usePathname();
-  const isAuthPage = pathname === '/login' || pathname === '/signup' || pathname === '/forgot-password' || pathname === '/personalize';
+  if (loading || (!user && !isAuthPage)) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
-  if (isAuthPage) {
-    // To prevent a hydration mismatch, we can delay rendering the auth page content
-    // until the component has mounted on the client.
-    return isClient ? <>{children}</> : null;
+  if (isAuthPage || (isPersonalizePage && user)) {
+    return <>{children}</>;
   }
   
+  if (!user) {
+    return null;
+  }
+
   return (
     <div className="text-foreground transition-colors duration-300">
       <div className="relative mx-auto flex min-h-screen max-w-md flex-col overflow-x-hidden bg-background shadow-2xl pb-28">
