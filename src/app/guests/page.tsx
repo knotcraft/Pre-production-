@@ -37,6 +37,7 @@ import type { Guest } from '@/lib/types';
 import { Loader2, MoreVertical, Mail, Phone, FileText, Pencil, Trash2, Leaf, Beef } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const statusFilters: Guest['status'][] = ['pending', 'confirmed', 'declined'];
 
@@ -357,57 +358,59 @@ export default function GuestsPage() {
             </main>
 
              <Dialog open={isGuestDialogOpen} onOpenChange={setIsGuestDialogOpen}>
-                <DialogContent className="sm:max-w-[425px]">
-                    <DialogHeader>
+                <DialogContent className="sm:max-w-[425px] grid-rows-[auto_minmax(0,1fr)_auto] p-0 max-h-[90dvh]">
+                    <DialogHeader className="p-6 pb-0">
                         <DialogTitle>{activeGuest ? 'Edit' : 'Add'} Guest</DialogTitle>
                     </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="name">Name</Label>
-                            <Input id="name" value={formState.name || ''} onChange={(e) => handleFormChange('name', e.target.value)} />
-                        </div>
-                         <div className="space-y-2">
-                            <Label htmlFor="group">Group</Label>
-                            <Input id="group" value={formState.group || ''} onChange={(e) => handleFormChange('group', e.target.value)} placeholder="e.g. Family, Friends" />
-                        </div>
-                         <div className="space-y-2">
-                            <Label>Side</Label>
-                             <RadioGroup value={formState.side} onValueChange={(val) => handleFormChange('side', val)} className="flex gap-4 pt-1">
-                                <div className="flex items-center space-x-2"><RadioGroupItem value="bride" id="r-bride" /><Label htmlFor="r-bride" className="font-normal">Bride</Label></div>
-                                <div className="flex items-center space-x-2"><RadioGroupItem value="groom" id="r-groom" /><Label htmlFor="r-groom" className="font-normal">Groom</Label></div>
-                                <div className="flex items-center space-x-2"><RadioGroupItem value="both" id="r-both" /><Label htmlFor="r-both" className="font-normal">Both</Label></div>
-                            </RadioGroup>
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Status</Label>
-                             <RadioGroup value={formState.status} onValueChange={(val) => handleFormChange('status', val)} className="flex gap-4 pt-1">
-                                <div className="flex items-center space-x-2"><RadioGroupItem value="pending" id="s-pending" /><Label htmlFor="s-pending" className="font-normal">Pending</Label></div>
-                                <div className="flex items-center space-x-2"><RadioGroupItem value="confirmed" id="s-confirmed" /><Label htmlFor="s-confirmed" className="font-normal">Confirmed</Label></div>
-                                <div className="flex items-center space-x-2"><RadioGroupItem value="declined" id="s-declined" /><Label htmlFor="s-declined" className="font-normal">Declined</Label></div>
-                            </RadioGroup>
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Dietary Preference</Label>
-                             <RadioGroup value={formState.diet || 'none'} onValueChange={(val) => handleFormChange('diet', val)} className="flex gap-4 pt-1">
-                                <div className="flex items-center space-x-2"><RadioGroupItem value="none" id="d-none" /><Label htmlFor="d-none" className="font-normal">None</Label></div>
-                                <div className="flex items-center space-x-2"><RadioGroupItem value="veg" id="d-veg" /><Label htmlFor="d-veg" className="font-normal">Veg</Label></div>
-                                <div className="flex items-center space-x-2"><RadioGroupItem value="non-veg" id="d-nonveg" /><Label htmlFor="d-nonveg" className="font-normal">Non-Veg</Label></div>
-                            </RadioGroup>
-                        </div>
-                         <div className="space-y-2">
-                            <Label htmlFor="email">Email</Label>
-                            <Input id="email" type="email" value={formState.email || ''} onChange={(e) => handleFormChange('email', e.target.value)} />
-                        </div>
-                         <div className="space-y-2">
-                            <Label htmlFor="phone">Phone</Label>
-                            <Input id="phone" type="tel" value={formState.phone || ''} onChange={(e) => handleFormChange('phone', e.target.value)} />
-                        </div>
-                         <div className="space-y-2">
-                            <Label htmlFor="notes">Notes</Label>
-                             <Textarea id="notes" value={formState.notes || ''} onChange={(e) => handleFormChange('notes', e.target.value)} placeholder="e.g. Party of 2, allergies"/>
-                        </div>
-                    </div>
-                    <DialogFooter>
+                    <ScrollArea className="h-full">
+                      <div className="grid gap-4 py-4 px-6">
+                          <div className="space-y-2">
+                              <Label htmlFor="name">Name</Label>
+                              <Input id="name" value={formState.name || ''} onChange={(e) => handleFormChange('name', e.target.value)} />
+                          </div>
+                          <div className="space-y-2">
+                              <Label htmlFor="group">Group</Label>
+                              <Input id="group" value={formState.group || ''} onChange={(e) => handleFormChange('group', e.target.value)} placeholder="e.g. Family, Friends" />
+                          </div>
+                          <div className="space-y-2">
+                              <Label>Side</Label>
+                              <RadioGroup value={formState.side} onValueChange={(val) => handleFormChange('side', val as 'bride' | 'groom' | 'both')} className="flex gap-4 pt-1">
+                                  <div className="flex items-center space-x-2"><RadioGroupItem value="bride" id="r-bride" /><Label htmlFor="r-bride" className="font-normal">Bride</Label></div>
+                                  <div className="flex items-center space-x-2"><RadioGroupItem value="groom" id="r-groom" /><Label htmlFor="r-groom" className="font-normal">Groom</Label></div>
+                                  <div className="flex items-center space-x-2"><RadioGroupItem value="both" id="r-both" /><Label htmlFor="r-both" className="font-normal">Both</Label></div>
+                              </RadioGroup>
+                          </div>
+                          <div className="space-y-2">
+                              <Label>Status</Label>
+                              <RadioGroup value={formState.status} onValueChange={(val) => handleFormChange('status', val as 'pending' | 'confirmed' | 'declined')} className="flex gap-4 pt-1">
+                                  <div className="flex items-center space-x-2"><RadioGroupItem value="pending" id="s-pending" /><Label htmlFor="s-pending" className="font-normal">Pending</Label></div>
+                                  <div className="flex items-center space-x-2"><RadioGroupItem value="confirmed" id="s-confirmed" /><Label htmlFor="s-confirmed" className="font-normal">Confirmed</Label></div>
+                                  <div className="flex items-center space-x-2"><RadioGroupItem value="declined" id="s-declined" /><Label htmlFor="s-declined" className="font-normal">Declined</Label></div>
+                              </RadioGroup>
+                          </div>
+                          <div className="space-y-2">
+                              <Label>Dietary Preference</Label>
+                              <RadioGroup value={formState.diet || 'none'} onValueChange={(val) => handleFormChange('diet', val as 'none' | 'veg' | 'non-veg')} className="flex gap-4 pt-1">
+                                  <div className="flex items-center space-x-2"><RadioGroupItem value="none" id="d-none" /><Label htmlFor="d-none" className="font-normal">None</Label></div>
+                                  <div className="flex items-center space-x-2"><RadioGroupItem value="veg" id="d-veg" /><Label htmlFor="d-veg" className="font-normal">Veg</Label></div>
+                                  <div className="flex items-center space-x-2"><RadioGroupItem value="non-veg" id="d-nonveg" /><Label htmlFor="d-nonveg" className="font-normal">Non-Veg</Label></div>
+                              </RadioGroup>
+                          </div>
+                          <div className="space-y-2">
+                              <Label htmlFor="email">Email</Label>
+                              <Input id="email" type="email" value={formState.email || ''} onChange={(e) => handleFormChange('email', e.target.value)} />
+                          </div>
+                          <div className="space-y-2">
+                              <Label htmlFor="phone">Phone</Label>
+                              <Input id="phone" type="tel" value={formState.phone || ''} onChange={(e) => handleFormChange('phone', e.target.value)} />
+                          </div>
+                          <div className="space-y-2">
+                              <Label htmlFor="notes">Notes</Label>
+                              <Textarea id="notes" value={formState.notes || ''} onChange={(e) => handleFormChange('notes', e.target.value)} placeholder="e.g. Party of 2, allergies"/>
+                          </div>
+                      </div>
+                    </ScrollArea>
+                    <DialogFooter className="p-6 pt-0">
                         <Button onClick={handleSaveGuest} className="w-full">Save Guest</Button>
                     </DialogFooter>
                 </DialogContent>
@@ -436,3 +439,5 @@ export default function GuestsPage() {
         </div>
     );
 }
+
+    
