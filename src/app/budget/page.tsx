@@ -261,29 +261,7 @@ export default function BudgetPage() {
             <span className="material-symbols-outlined">arrow_back_ios_new</span>
           </Link>
           <h2 className="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight flex-1 text-center">Budget Tracker</h2>
-          <div className="flex size-10 items-center justify-end">
-             <Dialog open={isEditTotalBudgetOpen} onOpenChange={setIsEditTotalBudgetOpen}>
-              <DialogTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-slate-900 dark:text-white">
-                  <Pencil className="h-5 w-5" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>{budgetData?.total ? 'Edit' : 'Set'} Total Budget</DialogTitle>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="total-budget" className="text-right">Amount</Label>
-                    <Input id="total-budget" type="number" value={totalBudgetInput} onChange={(e) => setTotalBudgetInput(e.target.value)} className="col-span-3" placeholder="e.g., 500000" />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button onClick={handleSetTotalBudget}>Save</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
+          <div className="flex size-10 items-center justify-end" />
         </div>
       </header>
 
@@ -291,9 +269,32 @@ export default function BudgetPage() {
         <div className="p-4">
           <div className="bg-white dark:bg-slate-900 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-800">
             <div className="flex justify-between items-start mb-6">
-              <div>
-                <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">Total Budget</p>
-                <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">₹{budgetData?.total?.toLocaleString('en-IN') || '0'}</h1>
+               <div className="flex items-baseline gap-2">
+                <div>
+                  <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">Total Budget</p>
+                  <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">₹{budgetData?.total?.toLocaleString('en-IN') || '0'}</h1>
+                </div>
+                <Dialog open={isEditTotalBudgetOpen} onOpenChange={setIsEditTotalBudgetOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="ghost" size="icon" className="text-slate-400">
+                      <Pencil className="h-5 w-5" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>{budgetData?.total ? 'Edit' : 'Set'} Total Budget</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="total-budget" className="text-right">Amount</Label>
+                        <Input id="total-budget" type="number" value={totalBudgetInput} onChange={(e) => setTotalBudgetInput(e.target.value)} className="col-span-3" placeholder="e.g., 500000" />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button onClick={handleSetTotalBudget}>Save</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
