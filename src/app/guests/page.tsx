@@ -40,6 +40,12 @@ import { Loader2, MoreVertical, Mail, Phone, FileText, Pencil, Trash2, Leaf, Bee
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 const statusFilters: Guest['status'][] = ['pending', 'confirmed', 'declined'];
 
@@ -412,9 +418,10 @@ export default function GuestsPage() {
                         </div>
                     ) : (
                         <div className="space-y-2 p-2">
+                            <TooltipProvider>
                             {filteredGuests.map(guest => (
                                 <div key={guest.id} className={cn(
-                                    "bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4",
+                                    "bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4 group",
                                     guest.status === 'declined' && 'opacity-60'
                                 )}>
                                     <Avatar>
@@ -436,16 +443,21 @@ export default function GuestsPage() {
                                             {guest.group && (
                                                 <span className="font-medium">{guest.group}</span>
                                             )}
-                                            {guest.group && guest.diet && guest.diet !== 'none' && <span className="text-slate-300 dark:text-slate-700">&bull;</span>}
-                                            {guest.diet && guest.diet !== 'none' && (
-                                                <div className="flex items-center gap-1">
-                                                    {guest.diet === 'veg' ? <Leaf className="h-3 w-3 text-green-500" /> : <Beef className="h-3 w-3 text-orange-500" />}
-                                                    <span className="capitalize">{guest.diet}</span>
-                                                </div>
-                                            )}
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-1">
+                                        {guest.diet && guest.diet !== 'none' && (
+                                            <Tooltip>
+                                                <TooltipTrigger>
+                                                    <div className="flex items-center justify-center h-8 w-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
+                                                        {guest.diet === 'veg' ? <Leaf className="h-4 w-4 text-green-500" /> : <Beef className="h-4 w-4 text-orange-500" />}
+                                                    </div>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p className="capitalize">{guest.diet}</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        )}
                                         <span className={cn(
                                             "px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
                                             guest.status === 'confirmed' && 'bg-green-100 dark:bg-green-950/50 text-green-700 dark:text-green-400',
@@ -461,25 +473,15 @@ export default function GuestsPage() {
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
-                                                {guest.email && (
-                                                    <DropdownMenuLabel className="flex items-center gap-2 font-normal text-muted-foreground px-2 py-1.5">
-                                                        <Mail className="h-4 w-4 shrink-0" />
-                                                        <span className="truncate">{guest.email}</span>
-                                                    </DropdownMenuLabel>
+                                                {(guest.email || guest.phone || guest.notes) && (
+                                                    <>
+                                                        <DropdownMenuLabel className="font-normal text-muted-foreground">Contact Info</DropdownMenuLabel>
+                                                        {guest.email && <DropdownMenuItem disabled className="gap-2"><Mail/>{guest.email}</DropdownMenuItem>}
+                                                        {guest.phone && <DropdownMenuItem disabled className="gap-2"><Phone/>{guest.phone}</DropdownMenuItem>}
+                                                        {guest.notes && <DropdownMenuItem disabled className="gap-2"><FileText/>{guest.notes}</DropdownMenuItem>}
+                                                        <DropdownMenuSeparator />
+                                                    </>
                                                 )}
-                                                {guest.phone && (
-                                                    <DropdownMenuLabel className="flex items-center gap-2 font-normal text-muted-foreground px-2 py-1.5">
-                                                        <Phone className="h-4 w-4 shrink-0" />
-                                                        <span className="truncate">{guest.phone}</span>
-                                                    </DropdownMenuLabel>
-                                                )}
-                                                {guest.notes && (
-                                                    <DropdownMenuLabel className="flex items-center gap-2 font-normal text-muted-foreground px-2 py-1.5">
-                                                        <FileText className="h-4 w-4 shrink-0" />
-                                                        <span className="truncate">{guest.notes}</span>
-                                                    </DropdownMenuLabel>
-                                                )}
-                                                {(guest.email || guest.phone || guest.notes) && <DropdownMenuSeparator />}
                                                 <DropdownMenuItem onSelect={() => openGuestDialog(guest)}>
                                                     <Pencil className="mr-2 h-4 w-4" /> Edit
                                                 </DropdownMenuItem>
@@ -491,6 +493,7 @@ export default function GuestsPage() {
                                     </div>
                                 </div>
                             ))}
+                            </TooltipProvider>
                         </div>
                     )}
                 </div>
@@ -578,5 +581,7 @@ export default function GuestsPage() {
         </div>
     );
 }
+
+    
 
     
