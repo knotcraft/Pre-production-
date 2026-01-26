@@ -200,16 +200,16 @@ export default function GuestsPage() {
                         <button onClick={() => setSideFilter('groom')} className={cn("flex-1 py-2 text-sm font-semibold rounded-lg shadow-sm transition-colors", sideFilter === 'groom' ? 'bg-white dark:bg-slate-700 text-primary' : 'text-muted-foreground')}>Groom's</button>
                     </div>
                 </div>
-                 <div className="flex flex-nowrap gap-3 px-4 pb-4 overflow-x-auto no-scrollbar">
-                    <div className="flex min-w-[110px] flex-1 flex-col gap-1 rounded-xl p-3 border border-[#e6dbde] dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
+                 <div className="grid grid-cols-3 gap-3 px-4 pb-4">
+                    <div className="flex flex-col gap-1 rounded-xl p-3 border border-[#e6dbde] dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
                         <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">Total Invited</p>
                         <p className="text-primary tracking-light text-xl font-bold leading-tight">{summary.total}</p>
                     </div>
-                    <div className="flex min-w-[110px] flex-1 flex-col gap-1 rounded-xl p-3 border border-[#e6dbde] dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
+                    <div className="flex flex-col gap-1 rounded-xl p-3 border border-[#e6dbde] dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
                         <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">Confirmed</p>
                         <p className="text-green-600 tracking-light text-xl font-bold leading-tight">{summary.confirmed}</p>
                     </div>
-                    <div className="flex min-w-[110px] flex-1 flex-col gap-1 rounded-xl p-3 border border-[#e6dbde] dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
+                    <div className="flex flex-col gap-1 rounded-xl p-3 border border-[#e6dbde] dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
                         <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">Pending</p>
                         <p className="text-gray-500 tracking-light text-xl font-bold leading-tight">{summary.pending}</p>
                     </div>
@@ -228,12 +228,12 @@ export default function GuestsPage() {
                         />
                     </div>
                 </div>
-                <div className="flex gap-2 px-4 pb-4 overflow-x-auto no-scrollbar">
-                    <button onClick={() => setStatusFilter('all')} className={cn("flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full px-5 shadow-sm transition-colors", statusFilter === 'all' ? 'bg-primary text-white' : 'bg-[#f4f0f1] dark:bg-gray-800 border border-gray-100 dark:border-gray-700')}>
+                <div className="flex flex-wrap gap-2 px-4 pb-4">
+                    <button onClick={() => setStatusFilter('all')} className={cn("flex h-9 items-center justify-center gap-x-2 rounded-full px-5 shadow-sm transition-colors", statusFilter === 'all' ? 'bg-primary text-white' : 'bg-[#f4f0f1] dark:bg-gray-800 border border-gray-100 dark:border-gray-700')}>
                         <p className={cn("text-sm", statusFilter === 'all' ? 'font-semibold' : 'font-medium text-foreground dark:text-gray-300')}>All Guests</p>
                     </button>
                     {statusFilters.map(status => (
-                        <button key={status} onClick={() => setStatusFilter(status)} className={cn("flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full px-5 shadow-sm transition-colors", statusFilter === status ? 'bg-primary text-white' : 'bg-[#f4f0f1] dark:bg-gray-800 border border-gray-100 dark:border-gray-700')}>
+                        <button key={status} onClick={() => setStatusFilter(status)} className={cn("flex h-9 items-center justify-center gap-x-2 rounded-full px-5 shadow-sm transition-colors", statusFilter === status ? 'bg-primary text-white' : 'bg-[#f4f0f1] dark:bg-gray-800 border border-gray-100 dark:border-gray-700')}>
                             <p className={cn("text-sm capitalize", statusFilter === status ? 'font-semibold' : 'font-medium text-foreground dark:text-gray-300')}>{status}</p>
                         </button>
                     ))}
