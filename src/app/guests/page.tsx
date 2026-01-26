@@ -305,22 +305,22 @@ export default function GuestsPage() {
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
                                             {guest.email && (
-                                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-default focus:bg-transparent text-muted-foreground">
+                                                <div className="relative flex select-none items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground">
                                                     <Mail className="mr-2 h-4 w-4" />
                                                     <span>{guest.email}</span>
-                                                </DropdownMenuItem>
+                                                </div>
                                             )}
                                             {guest.phone && (
-                                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-default focus:bg-transparent text-muted-foreground">
+                                                <div className="relative flex select-none items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground">
                                                     <Phone className="mr-2 h-4 w-4" />
                                                     <span>{guest.phone}</span>
-                                                </DropdownMenuItem>
+                                                </div>
                                             )}
                                             {guest.notes && (
-                                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-default focus:bg-transparent text-muted-foreground">
+                                                <div className="relative flex select-none items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground">
                                                     <FileText className="mr-2 h-4 w-4" />
                                                     <span className="truncate max-w-48">{guest.notes}</span>
-                                                </DropdownMenuItem>
+                                                </div>
                                             )}
                                             {(guest.email || guest.phone || guest.notes) && <DropdownMenuSeparator />}
                                             <DropdownMenuItem onClick={() => openGuestDialog(guest)}>
