@@ -1,7 +1,7 @@
 'use client';
 import { Progress } from '@/components/ui/progress';
 import { useFirebase, useUser } from '@/firebase';
-import { ref, get } from 'firebase/database';
+import { ref, onValue } from 'firebase/database';
 import { useEffect, useState } from 'react';
 
 type BudgetData = {
@@ -16,14 +16,22 @@ export function BudgetSummary() {
 
   useEffect(() => {
     if (user && database) {
-      const fetchBudgetData = async () => {
-        const budgetRef = ref(database, 'users/' + user.uid + '/budget');
-        const snapshot = await get(budgetRef);
+      const budgetRef = ref(database, 'users/' + user.uid + '/budget');
+      const unsubscribe = onValue(budgetRef, (snapshot) => {
         if (snapshot.exists()) {
-          setBudget(snapshot.val() as BudgetData);
+          const data = snapshot.val();
+          const totalBudget = data.total || 0;
+          let totalSpent = 0;
+          if (data.categories) {
+            totalSpent = Object.values(data.categories).reduce((sum: number, cat: any) => sum + (cat.spent || 0), 0);
+          }
+          setBudget({ total: totalBudget, spent: totalSpent });
+        } else {
+            setBudget({ total: 0, spent: 0 });
         }
-      };
-      fetchBudgetData();
+      });
+
+      return () => unsubscribe();
     }
   }, [user, database]);
   
