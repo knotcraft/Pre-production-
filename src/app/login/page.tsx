@@ -111,7 +111,7 @@ export default function LoginPage() {
                                 <FormItem>
                                     <FormLabel className="text-sm font-bold uppercase tracking-wider text-text-dark">Email Address</FormLabel>
                                     <FormControl>
-                                        <Input className="border-border-light bg-white focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200 outline-none w-full h-14 px-5 rounded-lg text-base font-medium placeholder:text-gray-400 border" placeholder="e.g. name@email.com" {...field} />
+                                        <Input className="border-border-light bg-white focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200 outline-none w-full h-14 px-5 rounded-lg text-base font-medium border" placeholder="e.g. name@email.com" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -128,7 +128,7 @@ export default function LoginPage() {
                                     </div>
                                     <FormControl>
                                       <div className="relative">
-                                          <Input className="border-border-light bg-white focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200 outline-none w-full h-14 px-5 rounded-lg text-base font-medium placeholder:text-gray-400 border" type="password" placeholder="••••••••" {...field} />
+                                          <Input className="border-border-light bg-white focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200 outline-none w-full h-14 px-5 rounded-lg text-base font-medium border" type="password" placeholder="••••••••" {...field} />
                                           <button className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" type="button">
                                               <span className="material-symbols-outlined">visibility</span>
                                           </button>
@@ -158,7 +158,7 @@ export default function LoginPage() {
                         <span className="relative bg-white px-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Or login with</span>
                     </div>
                     <div className="grid grid-cols-1 gap-4">
-                        <Button onClick={handleGoogleSignIn} className="flex items-center justify-center gap-3 h-14 rounded-lg border border-border-light hover:bg-gray-50 transition-colors font-bold text-text-dark" disabled={isGoogleLoading}>
+                        <Button onClick={handleGoogleSignIn} className="flex items-center justify-center gap-3 h-14 rounded-lg border border-border-light bg-white hover:bg-accent transition-colors font-bold text-text-dark" disabled={isGoogleLoading}>
                             {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon />}
                             Google
                         </Button>
