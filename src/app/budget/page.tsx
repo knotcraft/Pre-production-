@@ -565,7 +565,7 @@ export default function BudgetPage() {
       </AlertDialog>
       
       {hasBudget && (
-        <div className="fixed bottom-32 right-6 z-40">
+        <div className="fixed bottom-24 right-6 z-40">
             <Button onClick={() => openCategoryDialog(null)} className="w-14 h-14 rounded-full shadow-lg shadow-primary/30 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform">
             <span className="material-symbols-outlined text-3xl">add</span>
             </Button>
