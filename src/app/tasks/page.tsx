@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useUser, useFirebase } from '@/firebase';
 import { ref, onValue, set, push, update, remove } from 'firebase/database';
 import type { Task } from '@/lib/types';
-import { Trash2, Pencil } from 'lucide-react';
+import { Trash2, Pencil, Plus } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -386,9 +386,11 @@ export default function TasksPage() {
              )}
           </main>
           
-          <button onClick={() => openTaskDialog(null)} className="fixed bottom-28 right-6 flex items-center justify-center size-14 bg-primary text-white rounded-full shadow-lg shadow-primary/30 z-30 active:scale-95 transition-transform">
-            <span className="material-symbols-outlined text-3xl">add</span>
-          </button>
+          <div className="fixed bottom-28 right-6 z-40">
+            <Button onClick={() => openTaskDialog(null)} className="w-14 h-14 rounded-full shadow-lg shadow-primary/30 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform">
+              <span className="material-symbols-outlined text-3xl">add</span>
+            </Button>
+          </div>
             
           <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
               <DialogContent>

@@ -89,7 +89,7 @@ export default function BudgetPage() {
         const data = snapshot.val();
         setBudgetData(data);
         setTotalBudgetInput(data?.total?.toString() || '');
-        if (!data?.total) {
+        if (data === null || !data.total) {
             setIsEditTotalBudgetOpen(true);
         }
         setLoading(false);
@@ -261,10 +261,13 @@ export default function BudgetPage() {
     return style || categoryStyles[0];
   }
 
+  const hasBudget = budgetData?.total && budgetData.total > 0;
+  const budgetPercentage = hasBudget ? (totalSpent / budgetData.total) * 100 : 0;
+  
   if (loading) {
     return (
       <div className="animate-fade-in">
-        <header className="sticky top-0 z-40 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+        <header className="sticky top-0 z-10 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center p-4 justify-between">
             <Skeleton className="h-10 w-10 rounded-full" />
             <Skeleton className="h-6 w-32" />
@@ -272,7 +275,7 @@ export default function BudgetPage() {
           </div>
         </header>
         <main className="pb-24">
-          <div className="p-4">
+          <div className="p-4 min-h-[218px]">
             <Skeleton className="h-[218px] w-full rounded-2xl" />
           </div>
           <div className="px-4">
@@ -288,12 +291,9 @@ export default function BudgetPage() {
     )
   }
 
-  const hasBudget = budgetData?.total && budgetData.total > 0;
-  const budgetPercentage = hasBudget ? (totalSpent / budgetData.total) * 100 : 0;
-
   return (
     <div className="bg-background-light dark:bg-background-dark min-h-screen text-slate-900 dark:text-slate-100">
-      <header className="sticky top-0 z-40 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+      <header className="sticky top-0 z-10 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
         <div className="flex items-center p-4 justify-between">
           <Link href="/" className="text-slate-900 dark:text-white flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors">
             <span className="material-symbols-outlined">arrow_back_ios_new</span>
@@ -304,8 +304,8 @@ export default function BudgetPage() {
       </header>
 
       <main className="pb-24">
-        {!hasBudget ? (
-            <div className="p-4 mt-10">
+        <div className="p-4 min-h-[218px]">
+            {!hasBudget ? (
                 <div className="rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-8 text-center flex flex-col items-center">
                     <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-800 mb-4">
                         <Wallet className="h-8 w-8 text-slate-500" />
@@ -335,74 +335,73 @@ export default function BudgetPage() {
                         </DialogContent>
                     </Dialog>
                 </div>
-            </div>
-        ) : (
-            <>
-                <div className="p-4">
-                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-pink-500 to-rose-500 p-6 text-white shadow-lg dark:from-primary/80 dark:via-pink-500/80 dark:to-rose-500/80">
-                        <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10" />
-                        <div className="absolute -left-12 -bottom-12 h-32 w-32 rounded-full bg-white/10" />
+            ) : (
+                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-pink-500 to-rose-500 p-6 text-white shadow-lg dark:from-primary/80 dark:via-pink-500/80 dark:to-rose-500/80">
+                    <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10" />
+                    <div className="absolute -left-12 -bottom-12 h-32 w-32 rounded-full bg-white/10" />
 
-                        <div className="relative z-10">
-                            <div className="mb-2 flex items-center justify-between">
-                                <p className="text-sm font-medium uppercase tracking-widest text-white/80">Remaining Budget</p>
-                                <Dialog open={isEditTotalBudgetOpen} onOpenChange={setIsEditTotalBudgetOpen}>
-                                    <DialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="-mr-2 rounded-full text-white/80 hover:bg-white/20 hover:text-white">
-                                        <Pencil className="h-5 w-5" />
-                                    </Button>
-                                    </DialogTrigger>
-                                    <DialogContent>
-                                    <DialogHeader>
-                                        <DialogTitle>{budgetData?.total ? 'Edit' : 'Set'} Total Budget</DialogTitle>
-                                    </DialogHeader>
-                                    <div className="grid gap-4 py-4">
-                                        <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label htmlFor="total-budget" className="text-right">Amount</Label>
-                                        <Input id="total-budget" type="number" value={totalBudgetInput} onChange={(e) => setTotalBudgetInput(e.target.value)} className="col-span-3" placeholder="e.g., 500000" />
-                                        </div>
+                    <div className="relative z-10">
+                        <div className="mb-2 flex items-center justify-between">
+                            <p className="text-sm font-medium uppercase tracking-widest text-white/80">Remaining Budget</p>
+                            <Dialog open={isEditTotalBudgetOpen} onOpenChange={setIsEditTotalBudgetOpen}>
+                                <DialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="-mr-2 rounded-full text-white/80 hover:bg-white/20 hover:text-white">
+                                    <Pencil className="h-5 w-5" />
+                                </Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>{budgetData?.total ? 'Edit' : 'Set'} Total Budget</DialogTitle>
+                                </DialogHeader>
+                                <div className="grid gap-4 py-4">
+                                    <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="total-budget" className="text-right">Amount</Label>
+                                    <Input id="total-budget" type="number" value={totalBudgetInput} onChange={(e) => setTotalBudgetInput(e.target.value)} className="col-span-3" placeholder="e.g., 500000" />
                                     </div>
-                                    <DialogFooter>
-                                        <Button onClick={handleSetTotalBudget}>Save</Button>
-                                    </DialogFooter>
-                                    </DialogContent>
-                                </Dialog>
-                            </div>
-                            <h1 className="mb-6 text-4xl font-bold tracking-tight">
-                                ₹{remainingBudget.toLocaleString('en-IN')}
-                            </h1>
+                                </div>
+                                <DialogFooter>
+                                    <Button onClick={handleSetTotalBudget}>Save</Button>
+                                </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
+                        </div>
+                        <h1 className="mb-6 text-4xl font-bold tracking-tight">
+                            ₹{remainingBudget.toLocaleString('en-IN')}
+                        </h1>
 
-                            <div>
-                                <div className="h-2 w-full overflow-hidden rounded-full bg-white/30">
-                                    <div
-                                    className="h-full rounded-full bg-white transition-all duration-500"
-                                    style={{ width: `${Math.min(budgetPercentage, 100)}%` }}
-                                    />
-                                </div>
-                                <div className="mt-2 flex justify-between text-xs font-semibold text-white/90">
-                                    <span>Spent: ₹{totalSpent.toLocaleString('en-IN')}</span>
-                                    <span>Total: ₹{(budgetData?.total || 0).toLocaleString('en-IN')}</span>
-                                </div>
-                                {budgetPercentage > 100 && (
-                                    <p className="mt-2 text-right text-xs font-bold text-yellow-300">
-                                    You've gone over budget by ₹{(totalSpent - (budgetData?.total || 0)).toLocaleString('en-IN')}!
-                                    </p>
-                                )}
+                        <div>
+                            <div className="h-2 w-full overflow-hidden rounded-full bg-white/30">
+                                <div
+                                className="h-full rounded-full bg-white transition-all duration-500"
+                                style={{ width: `${Math.min(budgetPercentage, 100)}%` }}
+                                />
                             </div>
+                            <div className="mt-2 flex justify-between text-xs font-semibold text-white/90">
+                                <span>Spent: ₹{totalSpent.toLocaleString('en-IN')}</span>
+                                <span>Total: ₹{(budgetData?.total || 0).toLocaleString('en-IN')}</span>
+                            </div>
+                            {budgetPercentage > 100 && (
+                                <p className="mt-2 text-right text-xs font-bold text-yellow-300">
+                                You've gone over budget by ₹{(totalSpent - (budgetData?.total || 0)).toLocaleString('en-IN')}!
+                                </p>
+                            )}
                         </div>
                     </div>
                 </div>
-
+            )}
+        </div>
+        {hasBudget && (
+            <>
                 <div className="px-4 flex items-center justify-between">
-                <h3 className="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight">Spending by Category</h3>
+                    <h3 className="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight">Spending by Category</h3>
                 </div>
 
                 <div className="flex flex-col gap-2 p-4">
                 {categories.length === 0 ? (
-                    <div className="text-center p-10 text-slate-500 dark:text-slate-400 border-2 border-dashed rounded-xl">
-                    <Wallet className="mx-auto h-12 w-12 text-slate-400 mb-4" />
-                    <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300">No categories yet</h3>
-                    <p className="mt-1">Click the '+' button below to add your first spending category.</p>
+                    <div className="text-center p-10 text-slate-500 dark:text-slate-400 border-2 border-dashed rounded-xl min-h-[200px] flex flex-col justify-center items-center">
+                        <Wallet className="mx-auto h-12 w-12 text-slate-400 mb-4" />
+                        <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300">No categories yet</h3>
+                        <p className="mt-1">Click the '+' button below to add your first spending category.</p>
                     </div>
                 ) : (
                     <Accordion type="single" collapsible className="w-full space-y-2" value={openAccordion} onValueChange={setOpenAccordion}>
@@ -566,7 +565,7 @@ export default function BudgetPage() {
       </AlertDialog>
       
       {hasBudget && (
-        <div className="fixed bottom-28 right-6 z-30">
+        <div className="fixed bottom-28 right-6 z-40">
             <Button onClick={() => openCategoryDialog(null)} className="w-14 h-14 rounded-full shadow-lg shadow-primary/30 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform">
             <span className="material-symbols-outlined text-3xl">add</span>
             </Button>

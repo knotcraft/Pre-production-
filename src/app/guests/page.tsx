@@ -314,7 +314,7 @@ export default function GuestsPage() {
                 <div className="px-4 pb-4">
                   <Skeleton className="h-14 w-full rounded-2xl" />
                 </div>
-                <div className="px-4 pb-4">
+                <div className="px-4 pb-4 min-h-[192px]">
                   <Skeleton className="h-44 w-full rounded-2xl" />
                 </div>
             </header>
@@ -386,9 +386,9 @@ export default function GuestsPage() {
                         <button onClick={() => setSideFilter('groom')} className={cn("flex-1 py-2.5 text-sm font-bold rounded-xl transition-all", sideFilter === 'groom' ? 'bg-background text-primary shadow-sm ring-1 ring-black/5' : 'text-muted-foreground')}>Groom's</button>
                     </div>
                 </div>
-                <div className="px-4 pb-4">
-                    <div className={cn("flex flex-col justify-center min-h-[176px]", summary.total === 0 && 'items-center')}>
-                        {summary.total > 0 ? (
+                <div className="px-4 pb-4 min-h-[192px]">
+                    <div className={cn("flex flex-col justify-center min-h-[176px]")}>
+                        {guests.length > 0 ? (
                             <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-pink-500 to-rose-500 p-6 text-white shadow-lg dark:from-primary/80 dark:via-pink-500/80 dark:to-rose-500/80">
                                 <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10" />
                                 <div className="absolute -left-12 -bottom-12 h-32 w-32 rounded-full bg-white/10" />
@@ -460,7 +460,7 @@ export default function GuestsPage() {
                             <span className="material-symbols-outlined text-sm">unfold_more</span>
                         </div>
                     </div>
-                    {filteredGuests.length > 0 ? (
+                    {filteredGuests.length > 0 && guests.length > 0 ? (
                         <Accordion type="single" collapsible className="space-y-3">
                             {filteredGuests.map(guest => (
                                 <AccordionItem value={guest.id} key={guest.id} className="bg-card rounded-2xl shadow-sm border data-[state=open]:ring-2 data-[state=open]:ring-primary/20 overflow-hidden">
@@ -529,16 +529,16 @@ export default function GuestsPage() {
                                 </AccordionItem>
                             ))}
                         </Accordion>
-                    ) : (
+                    ) : guests.length > 0 ? (
                         <div className="text-center p-10 flex flex-col items-center justify-center gap-4 text-muted-foreground h-full">
-                            <span className="material-symbols-outlined text-6xl text-slate-400">groups</span>
-                            <h3 className="text-lg font-semibold text-foreground">No Guests Found</h3>
-                            <p>Your guest list is empty or your filters cleared everyone!</p>
+                            <span className="material-symbols-outlined text-6xl text-slate-400">search_off</span>
+                            <h3 className="text-lg font-semibold text-foreground">No Guests Match</h3>
+                            <p>Try a different search or filter.</p>
                         </div>
-                    )}
+                    ) : null}
                 </div>
             </main>
-            <div className="fixed bottom-28 right-6 z-30">
+            <div className="fixed bottom-28 right-6 z-40">
                 <Button onClick={() => openGuestDialog(null)} className="w-14 h-14 rounded-full shadow-lg shadow-primary/30 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform">
                     <span className="material-symbols-outlined text-3xl">add</span>
                 </Button>
