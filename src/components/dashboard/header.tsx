@@ -2,7 +2,8 @@
 'use client';
 
 import Image from 'next/image';
-import { Bell, LogOut } from 'lucide-react';
+import Link from 'next/link';
+import { Bell, User as UserIcon } from 'lucide-react';
 import { CountdownTimer } from '@/components/dashboard/countdown-timer';
 import { Button } from '@/components/ui/button';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -19,7 +20,7 @@ type UserData = {
 
 export function Header() {
   const { user } = useUser();
-  const { database, auth } = useFirebase();
+  const { database } = useFirebase();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -41,12 +42,6 @@ export function Header() {
   }, [user, database]);
 
   const heroImage = PlaceHolderImages.find(img => img.id === 'wedding-hero');
-
-  const handleSignOut = async () => {
-    if (auth) {
-      await auth.signOut();
-    }
-  };
 
   return (
     <div className="relative h-80 w-full overflow-hidden">
@@ -75,10 +70,12 @@ export function Header() {
               <Bell />
               <span className="sr-only">Notifications</span>
             </Button>
-            <Button onClick={handleSignOut} variant="ghost" size="icon" className="text-white bg-white/20 rounded-full backdrop-blur-sm hover:bg-white/30 hover:text-white">
-              <LogOut />
-              <span className="sr-only">Sign Out</span>
-            </Button>
+            <Link href="/settings" passHref>
+                <Button variant="ghost" size="icon" className="text-white bg-white/20 rounded-full backdrop-blur-sm hover:bg-white/30 hover:text-white">
+                  <UserIcon />
+                  <span className="sr-only">Settings</span>
+                </Button>
+            </Link>
           </div>
         </div>
         {loading ? (

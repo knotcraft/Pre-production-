@@ -1,28 +1,92 @@
+
 'use client';
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useUser, useFirebase } from '@/firebase';
-import { ref, remove } from 'firebase/database';
+import { ref, get, update, remove } from 'firebase/database';
+import { signOut } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { Trash2 } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Loader2, LogOut, Trash2 } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function SettingsPage() {
-  const { user } = useUser();
-  const { database } = useFirebase();
+  const { user, loading: userLoading } = useUser();
+  const { database, auth } = useFirebase();
+  const router = useRouter();
   const { toast } = useToast();
+  
+  const [formData, setFormData] = useState({
+    name: '',
+    partnerName: '',
+    weddingDate: '',
+  });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [isTasksAlertOpen, setIsTasksAlertOpen] = useState(false);
+
+  useEffect(() => {
+    if (user && database) {
+      const userRef = ref(database, 'users/' + user.uid);
+      get(userRef).then((snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          setFormData({
+            name: data.name || '',
+            partnerName: data.partnerName || '',
+            weddingDate: data.weddingDate || '',
+          });
+        }
+        setLoading(false);
+      });
+    } else if (!user && !userLoading) {
+      setLoading(false);
+    }
+  }, [user, database, userLoading]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setFormData((prev) => ({ ...prev, [id]: value }));
+  };
+
+  const handleSaveChanges = async () => {
+    if (!user || !database) return;
+    setSaving(true);
+    try {
+      const userRef = ref(database, `users/${user.uid}`);
+      await update(userRef, {
+        name: formData.name,
+        partnerName: formData.partnerName,
+        weddingDate: formData.weddingDate,
+      });
+      toast({
+        variant: 'success',
+        title: 'Success!',
+        description: 'Your details have been updated.',
+      });
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Uh oh! Something went wrong.',
+        description: error.message || 'Could not save your details.',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    if (auth) {
+      await signOut(auth);
+      router.push('/login');
+    }
+  };
 
   const handleDeleteAllTasks = async () => {
     if (!user || !database) {
@@ -52,12 +116,75 @@ export default function SettingsPage() {
     }
   };
 
-  return (
-    <div className="p-4 pt-8">
-      <h1 className="text-2xl font-bold text-center">Settings</h1>
-      <p className="text-muted-foreground mt-2 text-center">Manage your app settings here.</p>
+  if (loading || userLoading) {
+    return (
+      <div className="p-4 pt-8 animate-fade-in">
+        <header className="flex flex-col items-center justify-center mb-8">
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-64 mt-3" />
+        </header>
+        <div className="space-y-6">
+            <Skeleton className="h-64 w-full rounded-xl" />
+            <Skeleton className="h-32 w-full rounded-xl" />
+            <Skeleton className="h-48 w-full rounded-xl" />
+        </div>
+      </div>
+    );
+  }
 
-      <div className="mt-8">
+  return (
+    <div className="p-4 pt-8 animate-fade-in">
+       <header className="flex items-center justify-between mb-8">
+          <Link href="/" className="text-foreground flex size-10 shrink-0 items-center justify-center -ml-2 rounded-full hover:bg-secondary">
+            <span className="material-symbols-outlined text-2xl font-bold">arrow_back_ios_new</span>
+          </Link>
+          <h1 className="text-xl font-bold text-center flex-1">Settings</h1>
+           <div className="w-10" />
+      </header>
+
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Profile Details</CardTitle>
+            <CardDescription>
+              Manage your and your partner's names and the wedding date.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Your Name</Label>
+              <Input id="name" value={formData.name} onChange={handleInputChange} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="partnerName">Partner's Name</Label>
+              <Input id="partnerName" value={formData.partnerName} onChange={handleInputChange} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="weddingDate">Wedding Date</Label>
+              <Input id="weddingDate" type="date" value={formData.weddingDate} onChange={handleInputChange} />
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button onClick={handleSaveChanges} disabled={saving}>
+              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Changes
+            </Button>
+          </CardFooter>
+        </Card>
+
+        <Card>
+            <CardHeader>
+                <CardTitle>Account</CardTitle>
+                <CardDescription>Manage your account settings.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                 <Button variant="outline" onClick={handleSignOut}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sign Out
+                </Button>
+            </CardContent>
+        </Card>
+
         <Card className="border-destructive/50 bg-destructive/5">
           <CardHeader>
             <CardTitle className="text-destructive">Danger Zone</CardTitle>

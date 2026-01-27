@@ -408,7 +408,7 @@ export default function BudgetPage() {
         </div>
 
         <div className="flex flex-col gap-2 p-4">
-          {categories.length === 0 ? (
+          {categories.length === 0 && budgetData?.total ? (
             <div className="text-center p-10 text-slate-500 dark:text-slate-400 border-2 border-dashed rounded-xl">
               <Wallet className="mx-auto h-12 w-12 text-slate-400 mb-4" />
               <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300">No categories yet</h3>
