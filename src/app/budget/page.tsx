@@ -89,6 +89,9 @@ export default function BudgetPage() {
         const data = snapshot.val();
         setBudgetData(data);
         setTotalBudgetInput(data?.total?.toString() || '');
+        if (!data?.total) {
+            setIsEditTotalBudgetOpen(true);
+        }
         setLoading(false);
       });
 
@@ -285,55 +288,8 @@ export default function BudgetPage() {
     )
   }
 
-  const budgetPercentage = budgetData?.total ? (totalSpent / budgetData.total) * 100 : 0;
-  
-  if (!loading && (!budgetData?.total || budgetData.total <= 0)) {
-    return (
-      <div className="bg-background-light dark:bg-background-dark min-h-screen text-slate-900 dark:text-slate-100">
-        <header className="sticky top-0 z-40 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
-          <div className="flex items-center p-4 justify-between">
-            <Link href="/" className="text-slate-900 dark:text-white flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors">
-              <span className="material-symbols-outlined">arrow_back_ios_new</span>
-            </Link>
-            <h2 className="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight flex-1 text-center">Budget Tracker</h2>
-            <div className="flex size-10 items-center justify-end" />
-          </div>
-        </header>
-        <main className="p-4 flex-1 flex flex-col justify-center">
-          <div className="rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-8 text-center flex flex-col items-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-800 mb-4">
-                  <Wallet className="h-8 w-8 text-slate-500" />
-              </div>
-              <h3 className="text-xl font-bold mb-2">Set Your Wedding Budget</h3>
-              <p className="text-sm text-muted-foreground mb-6 max-w-xs">To start tracking your expenses, you first need to set a total budget for your wedding.</p>
-              
-              <Dialog open={isEditTotalBudgetOpen} onOpenChange={setIsEditTotalBudgetOpen}>
-                <DialogTrigger asChild>
-                  <Button size="lg">
-                    <Plus className="mr-2 h-5 w-5" /> Set Total Budget
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Set Total Budget</DialogTitle>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="total-budget" className="text-right">Amount</Label>
-                      <Input id="total-budget" type="number" value={totalBudgetInput} onChange={(e) => setTotalBudgetInput(e.target.value)} className="col-span-3" placeholder="e.g., 500000" />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button onClick={handleSetTotalBudget}>Save</Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-          </div>
-        </main>
-      </div>
-    )
-  }
-
+  const hasBudget = budgetData?.total && budgetData.total > 0;
+  const budgetPercentage = hasBudget ? (totalSpent / budgetData.total) * 100 : 0;
 
   return (
     <div className="bg-background-light dark:bg-background-dark min-h-screen text-slate-900 dark:text-slate-100">
@@ -348,155 +304,191 @@ export default function BudgetPage() {
       </header>
 
       <main className="pb-24">
-        <div className="p-4">
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-pink-500 to-rose-500 p-6 text-white shadow-lg dark:from-primary/80 dark:via-pink-500/80 dark:to-rose-500/80">
-                <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10" />
-                <div className="absolute -left-12 -bottom-12 h-32 w-32 rounded-full bg-white/10" />
-
-                <div className="relative z-10">
-                    <div className="mb-2 flex items-center justify-between">
-                        <p className="text-sm font-medium uppercase tracking-widest text-white/80">Remaining Budget</p>
-                        <Dialog open={isEditTotalBudgetOpen} onOpenChange={setIsEditTotalBudgetOpen}>
-                            <DialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="-mr-2 rounded-full text-white/80 hover:bg-white/20 hover:text-white">
-                                <Pencil className="h-5 w-5" />
-                            </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>{budgetData?.total ? 'Edit' : 'Set'} Total Budget</DialogTitle>
-                            </DialogHeader>
-                            <div className="grid gap-4 py-4">
-                                <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="total-budget" className="text-right">Amount</Label>
-                                <Input id="total-budget" type="number" value={totalBudgetInput} onChange={(e) => setTotalBudgetInput(e.target.value)} className="col-span-3" placeholder="e.g., 500000" />
-                                </div>
+        {!hasBudget ? (
+            <div className="p-4 mt-10">
+                <div className="rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-8 text-center flex flex-col items-center">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-800 mb-4">
+                        <Wallet className="h-8 w-8 text-slate-500" />
+                    </div>
+                    <h3 className="text-xl font-bold mb-2">Set Your Wedding Budget</h3>
+                    <p className="text-sm text-muted-foreground mb-6 max-w-xs">To start tracking your expenses, you first need to set a total budget for your wedding.</p>
+                    
+                    <Dialog open={isEditTotalBudgetOpen} onOpenChange={setIsEditTotalBudgetOpen}>
+                        <DialogTrigger asChild>
+                        <Button size="lg">
+                            <Plus className="mr-2 h-5 w-5" /> Set Total Budget
+                        </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Set Total Budget</DialogTitle>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                            <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="total-budget" className="text-right">Amount</Label>
+                            <Input id="total-budget" type="number" value={totalBudgetInput} onChange={(e) => setTotalBudgetInput(e.target.value)} className="col-span-3" placeholder="e.g., 500000" />
                             </div>
-                            <DialogFooter>
-                                <Button onClick={handleSetTotalBudget}>Save</Button>
-                            </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
-                    </div>
-                    <h1 className="mb-6 text-4xl font-bold tracking-tight">
-                        ₹{remainingBudget.toLocaleString('en-IN')}
-                    </h1>
-
-                    <div>
-                        <div className="h-2 w-full overflow-hidden rounded-full bg-white/30">
-                            <div
-                            className="h-full rounded-full bg-white transition-all duration-500"
-                            style={{ width: `${Math.min(budgetPercentage, 100)}%` }}
-                            />
                         </div>
-                        <div className="mt-2 flex justify-between text-xs font-semibold text-white/90">
-                            <span>Spent: ₹{totalSpent.toLocaleString('en-IN')}</span>
-                            <span>Total: ₹{(budgetData?.total || 0).toLocaleString('en-IN')}</span>
-                        </div>
-                        {budgetPercentage > 100 && (
-                            <p className="mt-2 text-right text-xs font-bold text-yellow-300">
-                            You've gone over budget by ₹{(totalSpent - (budgetData?.total || 0)).toLocaleString('en-IN')}!
-                            </p>
-                        )}
-                    </div>
+                        <DialogFooter>
+                            <Button onClick={handleSetTotalBudget}>Save</Button>
+                        </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
                 </div>
             </div>
-        </div>
+        ) : (
+            <>
+                <div className="p-4">
+                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-pink-500 to-rose-500 p-6 text-white shadow-lg dark:from-primary/80 dark:via-pink-500/80 dark:to-rose-500/80">
+                        <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10" />
+                        <div className="absolute -left-12 -bottom-12 h-32 w-32 rounded-full bg-white/10" />
 
-        <div className="px-4 flex items-center justify-between">
-          <h3 className="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight">Spending by Category</h3>
-        </div>
-
-        <div className="flex flex-col gap-2 p-4">
-          {categories.length === 0 && budgetData?.total ? (
-            <div className="text-center p-10 text-slate-500 dark:text-slate-400 border-2 border-dashed rounded-xl">
-              <Wallet className="mx-auto h-12 w-12 text-slate-400 mb-4" />
-              <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300">No categories yet</h3>
-              <p className="mt-1">Click the '+' button below to add your first spending category.</p>
-            </div>
-          ) : (
-             <Accordion type="single" collapsible className="w-full space-y-2" value={openAccordion} onValueChange={setOpenAccordion}>
-              {categories.map((cat) => {
-                const progress = cat.allocated > 0 ? (cat.spent / cat.allocated) * 100 : 0;
-                const style = getCategoryStyle(cat.icon);
-                const expensesArray = cat.expenses ? Object.entries(cat.expenses).map(([id, ex]) => ({ id, ...ex })) : [];
-
-                return (
-                  <AccordionItem value={cat.id} key={cat.id} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden data-[state=open]:border-primary/30 data-[state=open]:dark:border-primary/50 data-[state=open]:ring-1 data-[state=open]:ring-primary/10">
-                    <AccordionTrigger className="p-4 hover:no-underline">
-                      <div className="flex flex-col gap-3 w-full">
-                        <div className="flex justify-between items-center">
-                          <div className="flex items-center gap-3">
-                            <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", style.bg, style.text)}>
-                              <span className="material-symbols-outlined">{cat.icon}</span>
-                            </div>
-                            <div>
-                              <p className="text-slate-900 dark:text-white text-base font-bold text-left">{cat.name}</p>
-                              <p className="text-slate-500 dark:text-slate-400 text-xs text-left">₹{cat.spent.toLocaleString('en-IN')} of ₹{cat.allocated.toLocaleString('en-IN')}</p>
-                            </div>
-                          </div>
-                          <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200 text-slate-400 group-data-[state=open]:text-primary" />
-                        </div>
-                         <div className="flex flex-col gap-1.5">
-                            <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                                <div className="h-full rounded-full" style={{ width: `${Math.min(progress, 100)}%`, backgroundColor: progress > 100 ? '#ef4444' : `hsl(var(--primary))` }}></div>
-                            </div>
-                            <div className="flex justify-between">
-                                <p className="text-slate-500 dark:text-slate-400 text-xs font-medium">{Math.round(progress)}% utilized</p>
-                                <p className="text-slate-900 dark:text-white text-xs font-bold">₹{(cat.allocated - cat.spent).toLocaleString('en-IN')} left</p>
-                            </div>
-                        </div>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 px-4 py-3">
-                        <div className="flex flex-col gap-3">
-                          {expensesArray.length > 0 ? expensesArray.map(exp => (
-                            <div key={exp.id} className="flex justify-between items-center group">
-                              <div className="flex flex-col">
-                                <span className="text-sm font-semibold text-slate-900 dark:text-white">{exp.description}</span>
-                                <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">{format(parseISO(exp.date), 'MMM dd, yyyy')}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-bold text-slate-900 dark:text-white">₹{exp.amount.toLocaleString('en-IN')}</span>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100">
-                                      <MoreVertical className="h-4 w-4" />
+                        <div className="relative z-10">
+                            <div className="mb-2 flex items-center justify-between">
+                                <p className="text-sm font-medium uppercase tracking-widest text-white/80">Remaining Budget</p>
+                                <Dialog open={isEditTotalBudgetOpen} onOpenChange={setIsEditTotalBudgetOpen}>
+                                    <DialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="-mr-2 rounded-full text-white/80 hover:bg-white/20 hover:text-white">
+                                        <Pencil className="h-5 w-5" />
                                     </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => openExpenseDialog(cat, exp)}>
-                                      <Pencil className="mr-2 h-4 w-4" /> Edit
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleDeleteExpense(cat.id, exp.id)} className="text-destructive">
-                                      <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </div>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>{budgetData?.total ? 'Edit' : 'Set'} Total Budget</DialogTitle>
+                                    </DialogHeader>
+                                    <div className="grid gap-4 py-4">
+                                        <div className="grid grid-cols-4 items-center gap-4">
+                                        <Label htmlFor="total-budget" className="text-right">Amount</Label>
+                                        <Input id="total-budget" type="number" value={totalBudgetInput} onChange={(e) => setTotalBudgetInput(e.target.value)} className="col-span-3" placeholder="e.g., 500000" />
+                                        </div>
+                                    </div>
+                                    <DialogFooter>
+                                        <Button onClick={handleSetTotalBudget}>Save</Button>
+                                    </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
                             </div>
-                          )) : (
-                            <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">No expenses added yet.</p>
-                          )}
+                            <h1 className="mb-6 text-4xl font-bold tracking-tight">
+                                ₹{remainingBudget.toLocaleString('en-IN')}
+                            </h1>
+
+                            <div>
+                                <div className="h-2 w-full overflow-hidden rounded-full bg-white/30">
+                                    <div
+                                    className="h-full rounded-full bg-white transition-all duration-500"
+                                    style={{ width: `${Math.min(budgetPercentage, 100)}%` }}
+                                    />
+                                </div>
+                                <div className="mt-2 flex justify-between text-xs font-semibold text-white/90">
+                                    <span>Spent: ₹{totalSpent.toLocaleString('en-IN')}</span>
+                                    <span>Total: ₹{(budgetData?.total || 0).toLocaleString('en-IN')}</span>
+                                </div>
+                                {budgetPercentage > 100 && (
+                                    <p className="mt-2 text-right text-xs font-bold text-yellow-300">
+                                    You've gone over budget by ₹{(totalSpent - (budgetData?.total || 0)).toLocaleString('en-IN')}!
+                                    </p>
+                                )}
+                            </div>
                         </div>
-                        <div className="flex gap-2 mt-4">
-                            <Button onClick={() => openExpenseDialog(cat, null)} variant="outline" className="w-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 h-9">
-                              <Plus className="mr-2 h-4 w-4" /> Add Expense
-                            </Button>
-                            <Button onClick={() => openCategoryDialog(cat)} variant="ghost" size="icon" className="h-9 w-9 border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
-                                <Pencil className="h-4 w-4"/>
-                            </Button>
-                             <Button onClick={() => openDeleteDialog(cat)} variant="ghost" size="icon" className="h-9 w-9 border bg-white dark:bg-slate-900 border-destructive/20 dark:border-destructive/20 text-destructive">
-                                <Trash2 className="h-4 w-4"/>
-                            </Button>
-                        </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                )
-              })}
-            </Accordion>
-          )}
-        </div>
+                    </div>
+                </div>
+
+                <div className="px-4 flex items-center justify-between">
+                <h3 className="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight">Spending by Category</h3>
+                </div>
+
+                <div className="flex flex-col gap-2 p-4">
+                {categories.length === 0 ? (
+                    <div className="text-center p-10 text-slate-500 dark:text-slate-400 border-2 border-dashed rounded-xl">
+                    <Wallet className="mx-auto h-12 w-12 text-slate-400 mb-4" />
+                    <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300">No categories yet</h3>
+                    <p className="mt-1">Click the '+' button below to add your first spending category.</p>
+                    </div>
+                ) : (
+                    <Accordion type="single" collapsible className="w-full space-y-2" value={openAccordion} onValueChange={setOpenAccordion}>
+                    {categories.map((cat) => {
+                        const progress = cat.allocated > 0 ? (cat.spent / cat.allocated) * 100 : 0;
+                        const style = getCategoryStyle(cat.icon);
+                        const expensesArray = cat.expenses ? Object.entries(cat.expenses).map(([id, ex]) => ({ id, ...ex })) : [];
+
+                        return (
+                        <AccordionItem value={cat.id} key={cat.id} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden data-[state=open]:border-primary/30 data-[state=open]:dark:border-primary/50 data-[state=open]:ring-1 data-[state=open]:ring-primary/10">
+                            <AccordionTrigger className="p-4 hover:no-underline">
+                            <div className="flex flex-col gap-3 w-full">
+                                <div className="flex justify-between items-center">
+                                <div className="flex items-center gap-3">
+                                    <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", style.bg, style.text)}>
+                                    <span className="material-symbols-outlined">{cat.icon}</span>
+                                    </div>
+                                    <div>
+                                    <p className="text-slate-900 dark:text-white text-base font-bold text-left">{cat.name}</p>
+                                    <p className="text-slate-500 dark:text-slate-400 text-xs text-left">₹{cat.spent.toLocaleString('en-IN')} of ₹{cat.allocated.toLocaleString('en-IN')}</p>
+                                    </div>
+                                </div>
+                                <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200 text-slate-400 group-data-[state=open]:text-primary" />
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                    <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                                        <div className="h-full rounded-full" style={{ width: `${Math.min(progress, 100)}%`, backgroundColor: progress > 100 ? '#ef4444' : `hsl(var(--primary))` }}></div>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <p className="text-slate-500 dark:text-slate-400 text-xs font-medium">{Math.round(progress)}% utilized</p>
+                                        <p className="text-slate-900 dark:text-white text-xs font-bold">₹{(cat.allocated - cat.spent).toLocaleString('en-IN')} left</p>
+                                    </div>
+                                </div>
+                            </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 px-4 py-3">
+                                <div className="flex flex-col gap-3">
+                                {expensesArray.length > 0 ? expensesArray.map(exp => (
+                                    <div key={exp.id} className="flex justify-between items-center group">
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-semibold text-slate-900 dark:text-white">{exp.description}</span>
+                                        <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">{format(parseISO(exp.date), 'MMM dd, yyyy')}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-bold text-slate-900 dark:text-white">₹{exp.amount.toLocaleString('en-IN')}</span>
+                                        <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100">
+                                            <MoreVertical className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem onClick={() => openExpenseDialog(cat, exp)}>
+                                            <Pencil className="mr-2 h-4 w-4" /> Edit
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleDeleteExpense(cat.id, exp.id)} className="text-destructive">
+                                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </div>
+                                    </div>
+                                )) : (
+                                    <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">No expenses added yet.</p>
+                                )}
+                                </div>
+                                <div className="flex gap-2 mt-4">
+                                    <Button onClick={() => openExpenseDialog(cat, null)} variant="outline" className="w-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 h-9">
+                                    <Plus className="mr-2 h-4 w-4" /> Add Expense
+                                    </Button>
+                                    <Button onClick={() => openCategoryDialog(cat)} variant="ghost" size="icon" className="h-9 w-9 border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+                                        <Pencil className="h-4 w-4"/>
+                                    </Button>
+                                    <Button onClick={() => openDeleteDialog(cat)} variant="ghost" size="icon" className="h-9 w-9 border bg-white dark:bg-slate-900 border-destructive/20 dark:border-destructive/20 text-destructive">
+                                        <Trash2 className="h-4 w-4"/>
+                                    </Button>
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+                        )
+                    })}
+                    </Accordion>
+                )}
+                </div>
+            </>
+        )}
       </main>
       
       {/* ADD CATEGORY DIALOG */}
@@ -572,12 +564,14 @@ export default function BudgetPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <div className="fixed bottom-28 right-6 z-30">
-        <Button onClick={() => openCategoryDialog(null)} className="w-14 h-14 rounded-full shadow-lg shadow-primary/30 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform">
-          <span className="material-symbols-outlined text-3xl">add</span>
-        </Button>
-      </div>
+      
+      {hasBudget && (
+        <div className="fixed bottom-28 right-6 z-30">
+            <Button onClick={() => openCategoryDialog(null)} className="w-14 h-14 rounded-full shadow-lg shadow-primary/30 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform">
+            <span className="material-symbols-outlined text-3xl">add</span>
+            </Button>
+        </div>
+      )}
     </div>
   );
 }
