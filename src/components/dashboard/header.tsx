@@ -8,7 +8,7 @@ import { CountdownTimer } from '@/components/dashboard/countdown-timer';
 import { Button } from '@/components/ui/button';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useUser, useFirebase } from '@/firebase';
-import { ref, get } from 'firebase/database';
+import { ref, onValue } from 'firebase/database';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -16,6 +16,7 @@ type UserData = {
     name: string;
     partnerName: string;
     weddingDate: string;
+    heroImage?: string;
 };
 
 export function Header() {
@@ -27,29 +28,29 @@ export function Header() {
   useEffect(() => {
     if (user && database) {
       setLoading(true);
-      const fetchUserData = async () => {
-        const userRef = ref(database, 'users/' + user.uid);
-        const snapshot = await get(userRef);
+      const userRef = ref(database, 'users/' + user.uid);
+      const unsubscribe = onValue(userRef, (snapshot) => {
         if (snapshot.exists()) {
           setUserData(snapshot.val() as UserData);
         }
         setLoading(false);
-      };
-      fetchUserData();
+      });
+      return () => unsubscribe();
     } else if (!user) {
         setLoading(false);
     }
   }, [user, database]);
 
-  const heroImage = PlaceHolderImages.find(img => img.id === 'wedding-hero');
+  const defaultHeroImage = PlaceHolderImages.find(img => img.id === 'wedding-hero');
+  const heroImageSrc = userData?.heroImage || defaultHeroImage?.imageUrl;
 
   return (
     <div className="relative h-80 w-full overflow-hidden">
-      {heroImage && (
+      {heroImageSrc && (
         <Image
-          src={heroImage.imageUrl}
-          alt={heroImage.description}
-          data-ai-hint={heroImage.imageHint}
+          src={heroImageSrc}
+          alt={defaultHeroImage?.description || "Wedding hero image"}
+          data-ai-hint={defaultHeroImage?.imageHint}
           fill
           className="object-cover"
           priority

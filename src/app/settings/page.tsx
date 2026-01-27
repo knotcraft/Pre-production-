@@ -1,8 +1,9 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useUser, useFirebase } from '@/firebase';
 import { ref, get, update, remove } from 'firebase/database';
 import { signOut } from 'firebase/auth';
@@ -15,6 +16,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Loader2, LogOut, Trash2 } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 export default function SettingsPage() {
   const { user, loading: userLoading } = useUser();
@@ -26,21 +28,26 @@ export default function SettingsPage() {
     name: '',
     partnerName: '',
     weddingDate: '',
+    heroImage: '',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isTasksAlertOpen, setIsTasksAlertOpen] = useState(false);
+  
+  const [newImage, setNewImage] = useState<string | null>(null);
+  const [isSavingImage, setIsSavingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (user && database) {
-      const userRef = ref(database, 'users/' + user.uid);
-      get(userRef).then((snapshot) => {
+      get(ref(database, 'users/' + user.uid)).then((snapshot) => {
         if (snapshot.exists()) {
           const data = snapshot.val();
           setFormData({
             name: data.name || '',
             partnerName: data.partnerName || '',
             weddingDate: data.weddingDate || '',
+            heroImage: data.heroImage || '',
           });
         }
         setLoading(false);
@@ -59,8 +66,7 @@ export default function SettingsPage() {
     if (!user || !database) return;
     setSaving(true);
     try {
-      const userRef = ref(database, `users/${user.uid}`);
-      await update(userRef, {
+      await update(ref(database, `users/${user.uid}`), {
         name: formData.name,
         partnerName: formData.partnerName,
         weddingDate: formData.weddingDate,
@@ -80,6 +86,42 @@ export default function SettingsPage() {
       setSaving(false);
     }
   };
+  
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setNewImage(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveImage = async () => {
+      if (!user || !database || !newImage) return;
+      setIsSavingImage(true);
+      try {
+          await update(ref(database, `users/${user.uid}`), {
+              heroImage: newImage,
+          });
+          setFormData(prev => ({...prev, heroImage: newImage}));
+          setNewImage(null);
+          toast({
+              variant: 'success',
+              title: 'Success!',
+              description: 'Your dashboard image has been updated.',
+          });
+      } catch (error: any) {
+          toast({
+              variant: 'destructive',
+              title: 'Uh oh! Something went wrong.',
+              description: error.message || 'Could not save your image.',
+          });
+      } finally {
+          setIsSavingImage(false);
+      }
+  };
 
   const handleSignOut = async () => {
     if (auth) {
@@ -90,31 +132,21 @@ export default function SettingsPage() {
 
   const handleDeleteAllTasks = async () => {
     if (!user || !database) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'You must be logged in to perform this action.',
-      });
+      toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to perform this action.'});
       return;
     }
     try {
-      const tasksRef = ref(database, `users/${user.uid}/tasks`);
-      await remove(tasksRef);
-      toast({
-        variant: 'success',
-        title: 'Success!',
-        description: 'All tasks have been deleted.',
-      });
+      await remove(ref(database, `users/${user.uid}/tasks`));
+      toast({ variant: 'success', title: 'Success!', description: 'All tasks have been deleted.' });
     } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Uh oh! Something went wrong.',
-        description: error.message || 'Could not delete tasks.',
-      });
+      toast({ variant: 'destructive', title: 'Uh oh! Something went wrong.', description: error.message || 'Could not delete tasks.' });
     } finally {
       setIsTasksAlertOpen(false);
     }
   };
+
+  const defaultHeroImage = PlaceHolderImages.find(img => img.id === 'wedding-hero');
+  const currentImageSrc = newImage || formData.heroImage || defaultHeroImage?.imageUrl;
 
   if (loading || userLoading) {
     return (
@@ -170,6 +202,43 @@ export default function SettingsPage() {
               Save Changes
             </Button>
           </CardFooter>
+        </Card>
+        
+        <Card>
+            <CardHeader>
+                <CardTitle>Dashboard Image</CardTitle>
+                <CardDescription>
+                    Change the hero image on your main dashboard.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="relative aspect-video w-full overflow-hidden rounded-lg border">
+                    {currentImageSrc && (
+                        <Image
+                            src={currentImageSrc}
+                            alt="Dashboard hero image preview"
+                            fill
+                            className="object-cover"
+                        />
+                    )}
+                </div>
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleImageFileChange}
+                    className="hidden"
+                    accept="image/png, image/jpeg, image/webp"
+                />
+                {newImage ? (
+                    <Button onClick={handleSaveImage} disabled={isSavingImage} className="w-full">
+                        {isSavingImage ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Save Image'}
+                    </Button>
+                ) : (
+                    <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="w-full">
+                        Choose Image...
+                    </Button>
+                )}
+            </CardContent>
         </Card>
 
         <Card>
