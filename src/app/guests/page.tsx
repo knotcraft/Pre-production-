@@ -43,6 +43,21 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { PieChart, Pie, Cell } from 'recharts';
+import type { ChartConfig } from "@/components/ui/chart";
+
+const chartConfig = {
+    confirmed: {
+      label: "Confirmed",
+      color: "hsl(var(--chart-2))", // A greenish color from the theme
+    },
+    pending: {
+      label: "Pending",
+      color: "hsl(var(--chart-4))", // A yellowish color from the theme
+    },
+} satisfies ChartConfig;
 
 export default function GuestsPage() {
     const { user } = useUser();
@@ -122,6 +137,11 @@ export default function GuestsPage() {
 
         return { filteredGuests: displayGuests, summary: summaryData };
     }, [guests, sideFilter, statusFilter, searchQuery]);
+
+    const chartData = useMemo(() => [
+        { name: "confirmed", value: summary.confirmed, fill: chartConfig.confirmed.color },
+        { name: "pending", value: summary.pending, fill: chartConfig.pending.color },
+    ].filter(d => d.value > 0), [summary]);
 
 
     const openGuestDialog = (guest: Guest | null) => {
@@ -278,16 +298,16 @@ export default function GuestsPage() {
         <div className="flex flex-col min-h-screen">
             <header className="sticky top-0 z-20 flex flex-col bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800">
                 <div className="flex items-center p-4 justify-between">
-                    <Link href="/" className="text-[#181113] dark:text-white flex size-12 shrink-0 items-center -ml-4">
-                        <span className="material-symbols-outlined text-2xl font-bold">arrow_back_ios</span>
+                    <Link href="/" className="text-foreground flex size-10 shrink-0 items-center -ml-2 rounded-full hover:bg-secondary">
+                        <span className="material-symbols-outlined text-2xl font-bold">arrow_back_ios_new</span>
                     </Link>
-                    <h2 className="text-[#181113] dark:text-white text-xl font-extrabold leading-tight tracking-tight flex-1 text-center">Guest List</h2>
-                    <div className="flex w-12 items-center justify-end">
+                    <h2 className="text-foreground text-xl font-extrabold leading-tight tracking-tight flex-1 text-center">Guest List</h2>
+                    <div className="flex w-10 items-center justify-end">
                        <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <button className="flex cursor-pointer items-center justify-center rounded-lg h-12 bg-transparent text-[#181113] dark:text-white">
+                                <Button variant="ghost" size="icon" className="text-foreground">
                                     <span className="material-symbols-outlined font-bold">more_horiz</span>
-                                </button>
+                                </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuItem onSelect={handleUploadClick}>
@@ -316,22 +336,65 @@ export default function GuestsPage() {
                         <button onClick={() => setSideFilter('groom')} className={cn("flex-1 py-2.5 text-sm font-bold rounded-xl transition-all", sideFilter === 'groom' ? 'bg-background text-primary shadow-sm ring-1 ring-black/5' : 'text-muted-foreground')}>Groom's</button>
                     </div>
                 </div>
-                <div className="grid grid-cols-3 gap-3 px-4 pb-4">
-                    <div className="flex flex-col items-center justify-center gap-1 rounded-2xl p-3 bg-card border text-center shadow-sm">
-                        <span className="material-symbols-outlined text-primary text-3xl">groups</span>
-                        <p className="text-primary tracking-tight text-2xl font-black leading-tight">{summary.total}</p>
-                        <p className="text-muted-foreground text-[10px] font-extrabold uppercase tracking-widest">Invited</p>
-                    </div>
-                    <div className="flex flex-col items-center justify-center gap-1 rounded-2xl p-3 bg-card border text-center shadow-sm">
-                        <span className="material-symbols-outlined text-green-600 dark:text-green-400 text-3xl">how_to_reg</span>
-                        <p className="text-green-600 dark:text-green-400 tracking-tight text-2xl font-black leading-tight">{summary.confirmed}</p>
-                        <p className="text-muted-foreground text-[10px] font-extrabold uppercase tracking-widest">Confirmed</p>
-                    </div>
-                    <div className="flex flex-col items-center justify-center gap-1 rounded-2xl p-3 bg-card border text-center shadow-sm">
-                        <span className="material-symbols-outlined text-muted-foreground text-3xl">hourglass_top</span>
-                        <p className="text-muted-foreground tracking-tight text-2xl font-black leading-tight">{summary.pending}</p>
-                        <p className="text-muted-foreground text-[10px] font-extrabold uppercase tracking-widest">Pending</p>
-                    </div>
+                <div className="px-4 pb-4">
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <CardTitle>Guest Summary</CardTitle>
+                            <CardDescription>
+                                <span className="font-bold text-lg text-primary">{summary.total}</span> guests invited from {sideFilter === 'all' ? 'all sides' : `${sideFilter}'s side`}
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex items-center justify-center p-0">
+                            {summary.total > 0 ? (
+                                <ChartContainer
+                                    config={chartConfig}
+                                    className="mx-auto aspect-square h-[180px]"
+                                >
+                                    <PieChart>
+                                        <ChartTooltip
+                                            cursor={false}
+                                            content={<ChartTooltipContent hideLabel nameKey="name" />}
+                                        />
+                                        <Pie
+                                            data={chartData}
+                                            dataKey="value"
+                                            nameKey="name"
+                                            innerRadius={60}
+                                            strokeWidth={5}
+                                            stroke="hsl(var(--background))"
+                                        >
+                                            {chartData.map((entry) => (
+                                                <Cell key={entry.name} fill={entry.fill} />
+                                            ))}
+                                        </Pie>
+                                    </PieChart>
+                                </ChartContainer>
+                            ) : (
+                                <div className="h-[180px] flex flex-col items-center justify-center text-muted-foreground">
+                                    <span className="material-symbols-outlined text-5xl">sentiment_dissatisfied</span>
+                                    <p className="mt-2 text-sm font-medium">No guests to show</p>
+                                </div>
+                            )}
+                        </CardContent>
+                        {summary.total > 0 && (
+                            <CardFooter className="flex-col gap-2 text-sm pt-4">
+                                <div className="w-full flex items-center justify-between p-2 rounded-lg bg-green-50 dark:bg-green-900/20">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: chartConfig.confirmed.color }}/>
+                                        <p className="font-semibold text-green-700 dark:text-green-300">Confirmed</p>
+                                    </div>
+                                    <p className="font-bold text-green-700 dark:text-green-300">{summary.confirmed} <span className="font-normal text-xs">({Math.round((summary.confirmed / summary.total) * 100)}%)</span></p>
+                                </div>
+                                <div className="w-full flex items-center justify-between p-2 rounded-lg bg-amber-50 dark:bg-yellow-900/20">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: chartConfig.pending.color }}/>
+                                        <p className="font-semibold text-amber-700 dark:text-yellow-300">Pending</p>
+                                    </div>
+                                    <p className="font-bold text-amber-700 dark:text-yellow-300">{summary.pending} <span className="font-normal text-xs">({Math.round((summary.pending / summary.total) * 100)}%)</span></p>
+                                </div>
+                            </CardFooter>
+                        )}
+                    </Card>
                 </div>
             </header>
             <main className="flex-1 flex flex-col bg-slate-50 dark:bg-background-dark/40">
@@ -354,7 +417,7 @@ export default function GuestsPage() {
                         <p className={cn("text-sm font-bold", statusFilter !== 'pending' && "text-foreground")}>Pending</p>
                     </button>
                 </div>
-                <div className="flex-1 overflow-y-auto px-4">
+                <div className="flex-1 overflow-y-auto px-4 pb-24">
                     <div className="py-2 flex items-center justify-between">
                         <p className="text-muted-foreground text-[11px] font-black uppercase tracking-[0.15em]">Showing {filteredGuests.length} Guests</p>
                         <div className="flex items-center gap-1 text-primary text-[11px] font-extrabold">
