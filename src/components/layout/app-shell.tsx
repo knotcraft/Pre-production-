@@ -7,7 +7,38 @@ import { BottomNav } from '@/components/layout/bottom-nav';
 import { useState, useEffect } from 'react';
 import { useUser, useFirebase } from '@/firebase';
 import { ref, get } from 'firebase/database';
-import { Loader2 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+
+function AppLoadingSkeleton() {
+  return (
+    <div className="relative mx-auto flex min-h-screen max-w-md flex-col overflow-x-hidden bg-background-light dark:bg-background-dark shadow-2xl">
+      {/* Header Skeleton */}
+      <div className="p-4 border-b border-slate-200 dark:border-slate-800">
+        <Skeleton className="h-8 w-1/2 mx-auto" />
+      </div>
+
+      {/* Content Skeleton */}
+      <div className="flex-1 p-4 space-y-4">
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-20 w-full" />
+        <Skeleton className="h-40 w-full" />
+      </div>
+      
+      {/* Bottom Nav Skeleton */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 mx-auto max-w-md bg-white/90 dark:bg-background-dark/90 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 pt-2">
+        <div className="flex justify-around items-center h-16">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="flex flex-col items-center justify-center gap-1 w-16">
+              <Skeleton className="h-6 w-6 rounded-full" />
+              <Skeleton className="h-2 w-10" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, loading: userLoading } = useUser();
@@ -66,16 +97,12 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   // Show a loading screen while we check for user and profile status.
   if (userLoading || (user && !isProfileChecked)) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <AppLoadingSkeleton />;
   }
 
   // If it's an auth page or the personalize page for a new user, show only the children.
   if (isAuthPage || (isPersonalizePage && user)) {
-    return <>{children}</>;
+    return <div className="animate-fade-in">{children}</div>;
   }
   
   // If no user and not an auth page, we are in a redirect state, show nothing.
@@ -87,11 +114,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="text-foreground transition-colors duration-300">
       <div className="relative mx-auto flex min-h-screen max-w-md flex-col overflow-x-hidden bg-background-light dark:bg-background-dark shadow-2xl pb-24">
-        <main>{children}</main>
+        <main className="animate-fade-in">{children}</main>
         <BottomNav />
       </div>
     </div>
   );
 }
-
-    

@@ -39,9 +39,10 @@ import { useUser, useDatabase } from '@/firebase';
 import { ref, onValue, set, push, remove, update } from 'firebase/database';
 import { toast } from '@/hooks/use-toast';
 import type { BudgetData, Category, Expense } from '@/lib/types';
-import { Loader2, MoreVertical, Pencil, Plus, Trash2, ChevronDown, Wallet } from 'lucide-react';
+import { MoreVertical, Pencil, Plus, Trash2, ChevronDown, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const categoryStyles = [
     { color: 'primary', icon: 'home_work', bg: 'bg-primary/10', text: 'text-primary' },
@@ -258,7 +259,30 @@ export default function BudgetPage() {
   }
 
   if (loading) {
-    return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+    return (
+      <div className="animate-fade-in">
+        <header className="sticky top-0 z-40 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+          <div className="flex items-center p-4 justify-between">
+            <Skeleton className="h-10 w-10 rounded-full" />
+            <Skeleton className="h-6 w-32" />
+            <div className="w-10" />
+          </div>
+        </header>
+        <main className="pb-24">
+          <div className="p-4">
+            <Skeleton className="h-[218px] w-full rounded-2xl" />
+          </div>
+          <div className="px-4">
+            <Skeleton className="h-6 w-48 mb-4" />
+          </div>
+          <div className="flex flex-col gap-2 p-4">
+            <Skeleton className="h-36 w-full rounded-xl" />
+            <Skeleton className="h-36 w-full rounded-xl" />
+            <Skeleton className="h-36 w-full rounded-xl" />
+          </div>
+        </main>
+      </div>
+    )
   }
 
   const budgetPercentage = budgetData?.total ? (totalSpent / budgetData.total) * 100 : 0;

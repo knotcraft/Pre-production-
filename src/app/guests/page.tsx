@@ -1,3 +1,4 @@
+
 'use client';
 import Link from 'next/link';
 import { useState, useEffect, useMemo, useRef } from 'react';
@@ -38,11 +39,12 @@ import { useUser, useFirebase } from '@/firebase';
 import { ref, onValue, set, push, remove, update } from 'firebase/database';
 import { useToast } from '@/hooks/use-toast';
 import type { Guest } from '@/lib/types';
-import { Loader2, Upload, Download, ChevronDown } from 'lucide-react';
+import { Upload, Download, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function GuestsPage() {
     const { user } = useUser();
@@ -302,8 +304,36 @@ export default function GuestsPage() {
 
     if (loading) {
       return (
-        <div className="flex h-screen items-center justify-center bg-background-light dark:bg-background-dark">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="flex flex-col min-h-screen animate-fade-in">
+            <header className="sticky top-0 z-20 flex flex-col bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800">
+                <div className="flex items-center p-4 justify-between">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <Skeleton className="h-7 w-32" />
+                    <Skeleton className="h-10 w-10" />
+                </div>
+                <div className="px-4 pb-4">
+                  <Skeleton className="h-14 w-full rounded-2xl" />
+                </div>
+                <div className="px-4 pb-4">
+                  <Skeleton className="h-44 w-full rounded-2xl" />
+                </div>
+            </header>
+            <main className="flex-1 flex flex-col bg-slate-50 dark:bg-background-dark/40">
+                <div className="px-4 py-4">
+                    <Skeleton className="h-12 w-full rounded-2xl" />
+                </div>
+                <div className="flex gap-2 px-4 pb-4">
+                    <Skeleton className="h-10 w-28 rounded-full" />
+                    <Skeleton className="h-10 w-28 rounded-full" />
+                    <Skeleton className="h-10 w-28 rounded-full" />
+                </div>
+                <div className="flex-1 overflow-y-auto px-4 pb-24 space-y-3">
+                    <Skeleton className="h-24 w-full rounded-2xl" />
+                    <Skeleton className="h-24 w-full rounded-2xl" />
+                    <Skeleton className="h-24 w-full rounded-2xl" />
+                    <Skeleton className="h-24 w-full rounded-2xl" />
+                </div>
+            </main>
         </div>
       );
     }

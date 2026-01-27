@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -6,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useUser, useFirebase } from '@/firebase';
 import { ref, onValue, set, push, update, remove } from 'firebase/database';
 import type { Task } from '@/lib/types';
-import { Loader2, Trash2, Pencil } from 'lucide-react';
+import { Trash2, Pencil } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -52,6 +53,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { format, parseISO, isValid } from 'date-fns';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const taskCategories = [
   '12+ Months Out',
@@ -241,8 +243,36 @@ export default function TasksPage() {
     
     if (loading) {
       return (
-        <div className="flex h-screen items-center justify-center bg-background-light dark:bg-background-dark">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="bg-background-light dark:bg-[#1c0d11] min-h-screen animate-fade-in">
+          <header className="sticky top-0 z-20 bg-white/90 dark:bg-[#1c0d11]/90 backdrop-blur-md">
+            <div className="flex items-center p-4 pb-2 justify-between">
+              <Skeleton className="h-12 w-12 rounded-full -ml-3" />
+              <Skeleton className="h-6 w-40" />
+              <Skeleton className="h-12 w-12" />
+            </div>
+            <div className="px-4 py-2">
+                <Skeleton className="h-10 w-full rounded-xl" />
+            </div>
+          </header>
+          
+          <section className="bg-white dark:bg-[#1c0d11]">
+            <div className="flex flex-col gap-2 p-4">
+              <div className="flex gap-6 justify-between items-end">
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="h-5 w-10" />
+              </div>
+              <Skeleton className="h-2 w-full rounded-full" />
+              <Skeleton className="h-3 w-48" />
+            </div>
+          </section>
+          
+          <main className="flex-1 px-4 py-2 space-y-2 pb-24">
+             <div className="space-y-2">
+                <Skeleton className="h-24 w-full rounded-xl" />
+                <Skeleton className="h-36 w-full rounded-xl" />
+                <Skeleton className="h-28 w-full rounded-xl" />
+             </div>
+          </main>
         </div>
       );
     }
