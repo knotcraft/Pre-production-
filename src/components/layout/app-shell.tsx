@@ -46,71 +46,84 @@ export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   
-  const [isProfileChecked, setIsProfileChecked] = useState(false);
-
-  const isAuthPage = pathname === '/login' || pathname === '/signup' || pathname === '/forgot-password';
-  const isPersonalizePage = pathname === '/personalize';
+  const [isCheckComplete, setIsCheckComplete] = useState(false);
 
   useEffect(() => {
-    // If user state is still loading, we wait.
     if (userLoading) {
-      return;
+      return; // 1. Wait for user to be loaded
     }
 
-    // If there is no user and they are not on an auth page, redirect to login.
-    if (!user && !isAuthPage) {
-      router.push('/login');
-      return;
-    }
+    const publicPages = ['/login', '/signup', '/forgot-password', '/verify-email'];
+    const isPublicPage = publicPages.includes(pathname);
+    
+    if (user) {
+      // USER IS LOGGED IN
+      const isEmailPassword = user.providerData.some(p => p.providerId === 'password');
+      
+      // 2. Handle email verification
+      if (isEmailPassword && !user.emailVerified) {
+        if (pathname !== '/verify-email') {
+          router.push('/verify-email');
+        } else {
+          setIsCheckComplete(true);
+        }
+        return;
+      }
+      
+      // At this point, user is verified or uses social login.
+      if (isPublicPage) {
+        router.push('/');
+        return;
+      }
 
-    // If there is a user and they are on an auth page, redirect to home.
-    if (user && isAuthPage) {
-      router.push('/');
-      return;
-    }
-
-    // If there is a user, check if their profile is personalized.
-    if (user && database) {
+      // 3. Handle personalization
+      const isPersonalizePage = pathname === '/personalize';
       const checkUserProfile = async () => {
         const userRef = ref(database, 'users/' + user.uid);
         const snapshot = await get(userRef);
 
-        if (!snapshot.exists() && !isPersonalizePage) {
-          // If profile doesn't exist and they are not on personalize page, redirect them.
-          router.push('/personalize');
-        } else if (snapshot.exists() && isPersonalizePage) {
-          // If profile exists and they are trying to access personalize page, redirect to home.
-          router.push('/');
+        if (snapshot.exists()) {
+          if (isPersonalizePage) {
+            router.push('/');
+          } else {
+            setIsCheckComplete(true);
+          }
         } else {
-            // Profile check is done and user is on the correct page.
-            setIsProfileChecked(true);
+          if (!isPersonalizePage) {
+            router.push('/personalize');
+          } else {
+            setIsCheckComplete(true);
+          }
         }
       };
-
       checkUserProfile();
-    } else if (!user) {
-        // Not a logged in user, on an auth page, so no profile check needed.
-        setIsProfileChecked(true);
+
+    } else {
+      // NO USER LOGGED IN
+      if (!isPublicPage) {
+        router.push('/login');
+      } else {
+        setIsCheckComplete(true);
+      }
     }
+  }, [user, userLoading, database, router, pathname]);
 
-  }, [user, userLoading, database, router, pathname, isAuthPage, isPersonalizePage]);
 
-  // Show a loading screen while we check for user and profile status.
-  if (userLoading || (user && !isProfileChecked)) {
+  if (!isCheckComplete) {
     return <AppLoadingSkeleton />;
   }
 
-  // If it's an auth page or the personalize page for a new user, show only the children.
+  const isAuthPage = ['/login', '/signup', '/forgot-password', '/verify-email'].includes(pathname);
+  const isPersonalizePage = pathname === '/personalize';
+
   if (isAuthPage || (isPersonalizePage && user)) {
     return <div className="animate-fade-in">{children}</div>;
   }
   
-  // If no user and not an auth page, we are in a redirect state, show nothing.
   if (!user) {
     return null;
   }
 
-  // If user is authenticated and personalized, show the full app shell.
   return (
     <div className="text-foreground transition-colors duration-300">
       <div className="relative mx-auto flex min-h-screen max-w-md flex-col overflow-x-hidden bg-background-light dark:bg-background-dark shadow-2xl pb-24">

@@ -15,7 +15,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useFirebase } from '@/firebase';
-import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendEmailVerification } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
@@ -58,8 +58,14 @@ export default function SignupPage() {
         if (!auth) return;
         setIsLoading(true);
         try {
-            await createUserWithEmailAndPassword(auth, values.email, values.password);
-            router.push('/personalize');
+            const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+            await sendEmailVerification(userCredential.user);
+            toast({
+                variant: "success",
+                title: "Account Created!",
+                description: "A verification email has been sent. Please check your inbox.",
+            });
+            router.push(`/verify-email?email=${values.email}`);
         } catch (error: any) {
             toast({
                 variant: 'destructive',
