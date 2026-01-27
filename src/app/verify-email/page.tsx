@@ -20,15 +20,20 @@ export default function VerifyEmailPage() {
     useEffect(() => {
         const interval = setInterval(async () => {
             if (auth?.currentUser) {
-                await auth.currentUser.reload();
-                if (auth.currentUser.emailVerified) {
-                    clearInterval(interval);
-                    toast({
-                        variant: 'success',
-                        title: 'Email Verified!',
-                        description: "You're all set. Welcome to your dashboard!",
-                    });
-                    router.push('/');
+                try {
+                    await auth.currentUser.reload();
+                    if (auth.currentUser.emailVerified) {
+                        clearInterval(interval);
+                        toast({
+                            variant: 'success',
+                            title: 'Email Verified!',
+                            description: "You're all set. Welcome to your dashboard!",
+                        });
+                        router.push('/');
+                    }
+                } catch (error) {
+                    console.error("Error reloading user status:", error);
+                    // Silently catch network errors and allow the interval to continue.
                 }
             }
         }, 3000); // Check every 3 seconds
