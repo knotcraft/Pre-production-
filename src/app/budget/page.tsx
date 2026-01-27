@@ -98,18 +98,28 @@ export default function BudgetPage() {
   }, [user, database]);
 
   const { totalSpent, remainingBudget, categories } = useMemo(() => {
-    if (!budgetData || !budgetData.categories) {
-        return { totalSpent: 0, remainingBudget: budgetData?.total || 0, categories: [] };
+    const total = budgetData?.total || 0;
+
+    if (!budgetData?.categories) {
+      return { totalSpent: 0, remainingBudget: total, categories: [] };
     }
-    
+
     const cats = Object.entries(budgetData.categories).map(([id, cat]) => {
-        const expensesList = cat.expenses ? Object.values(cat.expenses) : [];
-        const spent = expensesList.reduce((sum, expense) => sum + expense.amount, 0);
-        return { id, ...cat, spent, expenses: cat.expenses || {} };
+      const expensesList = cat.expenses ? Object.values(cat.expenses) : [];
+      const spent = expensesList.reduce(
+        (sum, expense) => sum + (expense.amount || 0),
+        0
+      );
+      return {
+        id,
+        ...cat,
+        spent,
+        expenses: cat.expenses || {},
+      };
     });
-    
+
     const totalSpent = cats.reduce((sum, cat) => sum + (cat.spent || 0), 0);
-    const remainingBudget = (budgetData?.total || 0) - totalSpent;
+    const remainingBudget = total - totalSpent;
     return { totalSpent, remainingBudget, categories: cats };
   }, [budgetData]);
 
