@@ -28,7 +28,7 @@ export interface Guest {
   id: string;
   name: string;
   side: 'bride' | 'groom' | 'both';
-  status: 'pending' | 'confirmed' | 'declined';
+  status: 'pending' | 'confirmed';
   group?: string;
   email?: string;
   phone?: string;

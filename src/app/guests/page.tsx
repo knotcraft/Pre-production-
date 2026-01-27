@@ -31,7 +31,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Textarea } from '@/components/ui/textarea';
 import { useUser, useFirebase } from '@/firebase';
 import { ref, onValue, set, push, remove, update } from 'firebase/database';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import type { Guest } from '@/lib/types';
 import { Loader2, Upload, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -46,14 +46,17 @@ export default function GuestsPage() {
     
     const [isGuestDialogOpen, setIsGuestDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-    const [activeGuest, setActiveGuest] = useState<Guest | null>(null);
+    
+    // Use separate states for dialogs to prevent conflicts
+    const [editingGuest, setEditingGuest] = useState<Guest | null>(null);
+    const [deletingGuest, setDeletingGuest] = useState<Guest | null>(null);
 
     const [formState, setFormState] = useState<Partial<Guest>>({
         name: '', side: 'bride', status: 'pending', group: '', email: '', phone: '', notes: '', diet: 'none'
     });
 
     const [sideFilter, setSideFilter] = useState<'all' | 'bride' | 'groom'>('all');
-    const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'confirmed' | 'declined'>('all');
+    const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'confirmed'>('all');
     const [searchQuery, setSearchQuery] = useState('');
     
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -91,7 +94,6 @@ export default function GuestsPage() {
             total: guestsToShow.length,
             confirmed: guestsToShow.filter(g => g.status === 'confirmed').length,
             pending: guestsToShow.filter(g => g.status === 'pending').length,
-            declined: guestsToShow.filter(g => g.status === 'declined').length,
         };
 
         let displayGuests = guestsToShow;
@@ -112,7 +114,7 @@ export default function GuestsPage() {
 
 
     const openGuestDialog = (guest: Guest | null) => {
-        setActiveGuest(guest);
+        setEditingGuest(guest);
         setFormState(guest || { name: '', side: 'bride', status: 'pending', group: '', email: '', phone: '', notes: '', diet: 'none' });
         setIsGuestDialogOpen(true);
     };
@@ -127,8 +129,8 @@ export default function GuestsPage() {
         delete guestData.id;
 
         try {
-            if (activeGuest?.id) {
-                const guestRef = ref(database, `users/${user.uid}/guests/${activeGuest.id}`);
+            if (editingGuest?.id) {
+                const guestRef = ref(database, `users/${user.uid}/guests/${editingGuest.id}`);
                 await update(guestRef, guestData);
                 toast({ variant: 'success', title: 'Success', description: 'Guest updated.' });
             } else {
@@ -138,31 +140,31 @@ export default function GuestsPage() {
                 toast({ variant: 'success', title: 'Success', description: 'Guest added.' });
             }
             setIsGuestDialogOpen(false);
-            setActiveGuest(null);
+            setEditingGuest(null);
         } catch(e: any) {
             toast({ variant: 'destructive', title: 'Error', description: e.message || 'Could not save guest.' });
         }
     };
     
     const openDeleteDialog = (guest: Guest) => {
-        setActiveGuest(guest);
+        setDeletingGuest(guest);
         setIsDeleteDialogOpen(true);
     };
 
     const handleConfirmDelete = async () => {
-        if (!user || !database || !activeGuest) return;
+        if (!user || !database || !deletingGuest) return;
         try {
-            await remove(ref(database, `users/${user.uid}/guests/${activeGuest.id}`));
+            await remove(ref(database, `users/${user.uid}/guests/${deletingGuest.id}`));
             toast({ variant: 'success', title: 'Success', description: 'Guest deleted.' });
         } catch (e: any) {
             toast({ variant: 'destructive', title: 'Error', description: e.message || 'Could not delete guest.' });
         } finally {
             setIsDeleteDialogOpen(false);
-            setActiveGuest(null);
+            setDeletingGuest(null);
         }
     };
     
-    const handleFormChange = (field: keyof Omit<Guest, 'id' | 'address'>, value: string) => {
+    const handleFormChange = (field: keyof Omit<Guest, 'id'>, value: string) => {
         setFormState(prev => ({ ...prev, [field]: value }));
     };
 
@@ -215,7 +217,7 @@ export default function GuestsPage() {
                 return {
                     name: guestObj.name,
                     side: ['bride', 'groom', 'both'].includes(guestObj.side) ? guestObj.side as Guest['side'] : 'both',
-                    status: ['pending', 'confirmed', 'declined'].includes(guestObj.status) ? guestObj.status as Guest['status'] : 'pending',
+                    status: ['pending', 'confirmed'].includes(guestObj.status) ? guestObj.status as Guest['status'] : 'pending',
                     group: guestObj.group || '',
                     email: guestObj.email || '',
                     phone: guestObj.phone || '',
@@ -329,9 +331,6 @@ export default function GuestsPage() {
                     <button onClick={() => setStatusFilter('pending')} className={cn("flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full px-6", statusFilter === 'pending' ? 'bg-primary text-white shadow-md shadow-primary/20' : 'bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800')}>
                         <p className={cn("text-sm font-bold", statusFilter !== 'pending' && "text-[#181113] dark:text-gray-300")}>Pending</p>
                     </button>
-                     <button onClick={() => setStatusFilter('declined')} className={cn("flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full px-6", statusFilter === 'declined' ? 'bg-primary text-white shadow-md shadow-primary/20' : 'bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800')}>
-                        <p className={cn("text-sm font-bold", statusFilter !== 'declined' && "text-[#181113] dark:text-gray-300")}>Declined</p>
-                    </button>
                 </div>
             </div>
             <div className="flex-1 overflow-y-auto px-4 pb-32">
@@ -363,8 +362,7 @@ export default function GuestsPage() {
                                         <span className={cn(
                                             "px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest",
                                             guest.status === 'confirmed' && 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
-                                            guest.status === 'pending' && 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400',
-                                            guest.status === 'declined' && 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                                            guest.status === 'pending' && 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
                                         )}>{guest.status}</span>
                                         {guest.group && <span className="text-[#89616b] dark:text-gray-500 text-[10px] font-bold">• {guest.group}</span>}
                                     </div>
@@ -425,7 +423,7 @@ export default function GuestsPage() {
              <Dialog open={isGuestDialogOpen} onOpenChange={setIsGuestDialogOpen}>
                 <DialogContent className="sm:max-w-[425px] grid-rows-[auto_minmax(0,1fr)_auto] p-0 max-h-[90dvh]">
                     <DialogHeader className="p-6 pb-0">
-                        <DialogTitle>{activeGuest ? 'Edit' : 'Add'} Guest</DialogTitle>
+                        <DialogTitle>{editingGuest ? 'Edit' : 'Add'} Guest</DialogTitle>
                     </DialogHeader>
                     <ScrollArea className="h-full">
                       <div className="grid gap-4 py-4 px-6">
@@ -447,10 +445,9 @@ export default function GuestsPage() {
                           </div>
                           <div className="space-y-2">
                               <Label className="text-sm font-extrabold text-[#181113] dark:text-white uppercase tracking-wider">Status</Label>
-                              <RadioGroup value={formState.status} onValueChange={(val) => handleFormChange('status', val as 'pending' | 'confirmed' | 'declined')} className="flex gap-4 pt-1">
+                              <RadioGroup value={formState.status} onValueChange={(val) => handleFormChange('status', val as 'pending' | 'confirmed')} className="flex gap-4 pt-1">
                                   <div className="flex items-center space-x-2"><RadioGroupItem value="pending" id="s-pending" /><Label htmlFor="s-pending" className="font-normal text-base">Pending</Label></div>
                                   <div className="flex items-center space-x-2"><RadioGroupItem value="confirmed" id="s-confirmed" /><Label htmlFor="s-confirmed" className="font-normal text-base">Confirmed</Label></div>
-                                  <div className="flex items-center space-x-2"><RadioGroupItem value="declined" id="s-declined" /><Label htmlFor="s-declined" className="font-normal text-base">Declined</Label></div>
                               </RadioGroup>
                           </div>
                           <div className="space-y-2">
@@ -486,7 +483,7 @@ export default function GuestsPage() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the guest "{activeGuest?.name}".
+                            This action cannot be undone. This will permanently delete the guest "{deletingGuest?.name}".
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
