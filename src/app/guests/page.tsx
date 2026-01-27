@@ -29,7 +29,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Textarea } from '@/components/ui/textarea';
-import { useUser, useDatabase } from '@/firebase';
+import { useUser, useFirebase } from '@/firebase';
 import { ref, onValue, set, push, remove, update } from 'firebase/database';
 import { toast } from '@/hooks/use-toast';
 import type { Guest } from '@/lib/types';
@@ -38,40 +38,26 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 
-
 export default function GuestsPage() {
     const { user } = useUser();
-    const database = useDatabase();
+    const { database } = useFirebase();
     const [loading, setLoading] = useState(true);
     const [guests, setGuests] = useState<Guest[]>([]);
     
-    // Dialog states
     const [isGuestDialogOpen, setIsGuestDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-    
-    // State for active item
     const [guestToEdit, setGuestToEdit] = useState<Guest | null>(null);
     const [guestToDelete, setGuestToDelete] = useState<Guest | null>(null);
 
-    // Form state
     const [formState, setFormState] = useState<Partial<Guest>>({
-        name: '',
-        side: 'both',
-        status: 'pending',
-        group: '',
-        email: '',
-        phone: '',
-        notes: '',
-        diet: 'none',
+        name: '', side: 'bride', status: 'pending', group: '', email: '', phone: '', notes: '', diet: 'none'
     });
 
-    // Filtering and Searching
     const [sideFilter, setSideFilter] = useState<'all' | 'bride' | 'groom'>('all');
     const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'confirmed' | 'declined'>('all');
     const [searchQuery, setSearchQuery] = useState('');
     
     const fileInputRef = useRef<HTMLInputElement>(null);
-
 
     useEffect(() => {
         if (user && database) {
@@ -82,7 +68,7 @@ export default function GuestsPage() {
                     const guestsList: Guest[] = Object.entries(data).map(([id, guest]) => ({
                         id,
                         ...(guest as Omit<Guest, 'id'>)
-                    }));
+                    })).reverse(); // show most recent first
                     setGuests(guestsList);
                 } else {
                     setGuests([]);
@@ -97,66 +83,62 @@ export default function GuestsPage() {
     }, [user, database]);
     
     const { filteredGuests, summary } = useMemo(() => {
-        let filtered = guests;
-        
-        if (sideFilter !== 'all') {
-            filtered = filtered.filter(g => g.side === sideFilter || (sideFilter === 'bride' && g.side === 'both') || (sideFilter === 'groom' && g.side === 'both'));
-        }
+        const guestsToShow = guests.filter(guest => {
+            if (sideFilter === 'all') return true;
+            return guest.side === sideFilter || guest.side === 'both';
+        });
+
+        const summaryData = {
+            total: guestsToShow.length,
+            confirmed: guestsToShow.filter(g => g.status === 'confirmed').length,
+            pending: guestsToShow.filter(g => g.status === 'pending').length,
+            declined: guestsToShow.filter(g => g.status === 'declined').length,
+        };
+
+        let displayGuests = guestsToShow;
 
         if (statusFilter !== 'all') {
-            filtered = filtered.filter(g => g.status === statusFilter);
+            displayGuests = displayGuests.filter(g => g.status === statusFilter);
         }
 
         if (searchQuery) {
-            filtered = filtered.filter(g => 
+            displayGuests = displayGuests.filter(g => 
                 g.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                g.group?.toLowerCase().includes(searchQuery.toLowerCase())
+                (g.group && g.group.toLowerCase().includes(searchQuery.toLowerCase()))
             );
         }
 
-        const confirmedGuests = guests.filter(g => g.status === 'confirmed');
-        const summaryData = {
-            total: guests.length,
-            confirmed: confirmedGuests.length,
-            pending: guests.filter(g => g.status === 'pending').length,
-            declined: guests.filter(g => g.status === 'declined').length,
-        };
-
-        return { filteredGuests: filtered, summary: summaryData };
+        return { filteredGuests: displayGuests, summary: summaryData };
     }, [guests, sideFilter, statusFilter, searchQuery]);
 
 
     const openGuestDialog = (guest: Guest | null) => {
         setGuestToEdit(guest);
-        setFormState(guest || { name: '', side: 'both', status: 'pending', group: '', email: '', phone: '', notes: '', diet: 'none' });
+        setFormState(guest || { name: '', side: 'bride', status: 'pending', group: '', email: '', phone: '', notes: '', diet: 'none' });
         setIsGuestDialogOpen(true);
     };
-
+    
     const handleSaveGuest = async () => {
         if (!user || !database || !formState.name) {
             toast({ variant: 'destructive', title: 'Invalid input', description: 'Guest name is required.' });
             return;
         }
 
-        // Ensure notes is not undefined
-        const guestData = { ...formState, notes: formState.notes || '' };
+        const guestData = { ...formState, notes: formState.notes || '', group: formState.group || '' };
         delete guestData.id;
 
         try {
             if (guestToEdit?.id) {
-                // Editing existing guest
                 const guestRef = ref(database, `users/${user.uid}/guests/${guestToEdit.id}`);
                 await update(guestRef, guestData);
                 toast({ title: 'Success', description: 'Guest updated.' });
             } else {
-                // Adding new guest
                 const guestsRef = ref(database, `users/${user.uid}/guests`);
                 const newGuestRef = push(guestsRef);
                 await set(newGuestRef, guestData);
                 toast({ title: 'Success', description: 'Guest added.' });
             }
             setIsGuestDialogOpen(false);
-            setGuestToEdit(null);
         } catch(e: any) {
             toast({ variant: 'destructive', title: 'Error', description: e.message || 'Could not save guest.' });
         }
@@ -176,30 +158,19 @@ export default function GuestsPage() {
             toast({ variant: 'destructive', title: 'Error', description: e.message || 'Could not delete guest.' });
         } finally {
             setIsDeleteDialogOpen(false);
-            setGuestToDelete(null);
         }
     };
     
-    const handleFormChange = (field: keyof Omit<Guest, 'id'>, value: string) => {
+    const handleFormChange = (field: keyof Omit<Guest, 'id' | 'address'>, value: string) => {
         setFormState(prev => ({ ...prev, [field]: value }));
     };
 
     const handleDownloadTemplate = () => {
         const headers = ['name', 'side', 'status', 'group', 'email', 'phone', 'notes', 'diet'];
         const sampleData = [
-            'John Doe', // name
-            'bride', // side (bride, groom, or both)
-            'pending', // status (pending, confirmed, or declined)
-            'College Friends', // group
-            'john.doe@example.com', // email
-            '123-456-7890', // phone
-            'Allergic to peanuts', // notes
-            'veg' // diet (none, veg, or non-veg)
+            'John Doe', 'bride', 'pending', 'College Friends', 'john.doe@example.com', '123-456-7890', 'Allergic to peanuts', 'veg'
         ];
-        const csvContent = "data:text/csv;charset=utf-8," 
-            + headers.join(",") + "\n" 
-            + sampleData.join(",");
-
+        const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + sampleData.join(",");
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
         link.setAttribute("href", encodedUri);
@@ -221,83 +192,56 @@ export default function GuestsPage() {
         reader.onload = async (e) => {
             const text = e.target?.result as string;
             if (!user || !database) return;
-
             const lines = text.split('\n').filter(line => line.trim() !== '');
             if (lines.length <= 1) {
-                toast({ variant: 'destructive', title: 'Empty File', description: 'The selected CSV file is empty.' });
+                toast({ variant: 'destructive', title: 'Empty File', description: 'The CSV file is empty.' });
                 return;
             }
             const headers = lines[0].trim().split(',').map(h => h.trim().toLowerCase());
             const requiredHeaders = ['name', 'side', 'status'];
-            
-            const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
-            if (missingHeaders.length > 0) {
-                toast({
-                    variant: 'destructive',
-                    title: 'Invalid CSV Template',
-                    description: `Missing columns: ${missingHeaders.join(', ')}. Please download the template.`,
-                });
+            if (!requiredHeaders.every(h => headers.includes(h))) {
+                toast({ variant: 'destructive', title: 'Invalid CSV Template', description: 'Missing required columns: name, side, status.' });
                 return;
             }
             
-            const guestsToUpload: Omit<Guest, 'id'>[] = [];
-            for (let i = 1; i < lines.length; i++) {
-                const values = lines[i].trim().split(',');
-                const guest: Partial<Guest> = {};
-                
+            const guestsToUpload: Omit<Guest, 'id'>[] = lines.slice(1).map(line => {
+                const values = line.split(',');
+                const guestObj: { [key: string]: string } = {};
                 headers.forEach((header, index) => {
-                    const key = header as keyof Guest;
-                    const value = values[index]?.trim() || '';
-
-                    if (key === 'name' && value) guest.name = value;
-                    if (key === 'group') guest.group = value;
-                    if (key === 'email') guest.email = value;
-                    if (key === 'phone') guest.phone = value;
-                    if (key === 'notes') guest.notes = value;
-                    if (key === 'side' && ['bride', 'groom', 'both'].includes(value)) guest.side = value as Guest['side'];
-                    if (key === 'status' && ['pending', 'confirmed', 'declined'].includes(value)) guest.status = value as Guest['status'];
-                    if (key === 'diet' && ['none', 'veg', 'non-veg'].includes(value)) guest.diet = value as Guest['diet'];
+                    guestObj[header] = values[index]?.trim() || '';
                 });
-                
-                if (guest.name && guest.side && guest.status) {
-                    guestsToUpload.push({
-                        name: guest.name,
-                        side: guest.side,
-                        status: guest.status,
-                        group: guest.group || '',
-                        email: guest.email || '',
-                        phone: guest.phone || '',
-                        notes: guest.notes || '',
-                        diet: guest.diet || 'none',
-                    });
-                }
-            }
+
+                return {
+                    name: guestObj.name,
+                    side: ['bride', 'groom', 'both'].includes(guestObj.side) ? guestObj.side as Guest['side'] : 'both',
+                    status: ['pending', 'confirmed', 'declined'].includes(guestObj.status) ? guestObj.status as Guest['status'] : 'pending',
+                    group: guestObj.group || '',
+                    email: guestObj.email || '',
+                    phone: guestObj.phone || '',
+                    notes: guestObj.notes || '',
+                    diet: ['none', 'veg', 'non-veg'].includes(guestObj.diet) ? guestObj.diet as Guest['diet'] : 'none',
+                };
+            }).filter(g => g.name);
 
             if (guestsToUpload.length === 0) {
-                toast({ variant: 'destructive', title: 'No Guests Found', description: 'The CSV file does not contain valid guest data.' });
+                toast({ variant: 'destructive', title: 'No Guests Found', description: 'No valid guest data found in the file.' });
                 return;
             }
 
             try {
-                const guestsRef = ref(database, `users/${user.uid}/guests`);
                 const updates: { [key: string]: any } = {};
                 guestsToUpload.forEach(guest => {
-                    const newGuestKey = push(guestsRef).key;
-                    if(newGuestKey) {
-                       updates[newGuestKey] = guest;
-                    }
+                    const newGuestKey = push(ref(database, `users/${user.uid}/guests`)).key;
+                    if(newGuestKey) updates[newGuestKey] = guest;
                 });
-
                 await update(ref(database, `users/${user.uid}/guests`), updates);
-
-                toast({ title: 'Upload Successful', description: `${guestsToUpload.length} guests have been added.` });
+                toast({ title: 'Upload Successful', description: `${guestsToUpload.length} guests imported.` });
             } catch (e) {
-                toast({ variant: 'destructive', title: 'Upload Failed', description: 'An error occurred while uploading guests.' });
-            } finally {
-                if (fileInputRef.current) fileInputRef.current.value = '';
+                toast({ variant: 'destructive', title: 'Upload Failed', description: 'An error occurred during upload.' });
             }
         };
         reader.readAsText(file);
+        if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
     if (loading) {
