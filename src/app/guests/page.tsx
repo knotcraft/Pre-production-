@@ -2,7 +2,6 @@
 'use client';
 import Link from 'next/link';
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -24,9 +23,7 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
-    DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -36,12 +33,11 @@ import { useUser, useDatabase } from '@/firebase';
 import { ref, onValue, set, push, remove, update } from 'firebase/database';
 import { toast } from '@/hooks/use-toast';
 import type { Guest } from '@/lib/types';
-import { Loader2, MoreVertical, Mail, Phone, FileText, Pencil, Trash2, Leaf, Beef, Upload, Download, Search } from 'lucide-react';
+import { Loader2, Upload, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
 
-const statusFilters: Guest['status'][] = ['pending', 'confirmed', 'declined'];
 
 export default function GuestsPage() {
     const { user } = useUser();
@@ -104,7 +100,7 @@ export default function GuestsPage() {
         let filtered = guests;
         
         if (sideFilter !== 'all') {
-            filtered = filtered.filter(g => g.side === sideFilter || g.side === 'both');
+            filtered = filtered.filter(g => g.side === sideFilter || (sideFilter === 'bride' && g.side === 'both') || (sideFilter === 'groom' && g.side === 'both'));
         }
 
         if (statusFilter !== 'all') {
@@ -124,8 +120,6 @@ export default function GuestsPage() {
             confirmed: confirmedGuests.length,
             pending: guests.filter(g => g.status === 'pending').length,
             declined: guests.filter(g => g.status === 'declined').length,
-            veg: confirmedGuests.filter(g => g.diet === 'veg').length,
-            nonVeg: confirmedGuests.filter(g => g.diet === 'non-veg').length,
         };
 
         return { filteredGuests: filtered, summary: summaryData };
@@ -144,7 +138,8 @@ export default function GuestsPage() {
             return;
         }
 
-        const guestData = { ...formState };
+        // Ensure notes is not undefined
+        const guestData = { ...formState, notes: formState.notes || '' };
         delete guestData.id;
 
         try {
@@ -162,8 +157,8 @@ export default function GuestsPage() {
             }
             setIsGuestDialogOpen(false);
             setGuestToEdit(null);
-        } catch(e) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not save guest.' });
+        } catch(e: any) {
+            toast({ variant: 'destructive', title: 'Error', description: e.message || 'Could not save guest.' });
         }
     };
     
@@ -177,8 +172,8 @@ export default function GuestsPage() {
         try {
             await remove(ref(database, `users/${user.uid}/guests/${guestToDelete.id}`));
             toast({ title: 'Success', description: 'Guest deleted.' });
-        } catch (e) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not delete guest.' });
+        } catch (e: any) {
+            toast({ variant: 'destructive', title: 'Error', description: e.message || 'Could not delete guest.' });
         } finally {
             setIsDeleteDialogOpen(false);
             setGuestToDelete(null);
@@ -305,27 +300,28 @@ export default function GuestsPage() {
         reader.readAsText(file);
     };
 
-
     if (loading) {
-      return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+      return (
+        <div className="flex h-screen items-center justify-center bg-background-light dark:bg-background-dark">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      );
     }
 
     return (
-        <div className="flex flex-col bg-background-light dark:bg-background-dark min-h-screen">
-            <header className="sticky top-0 z-40 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+        <div className="relative flex h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-white dark:bg-background-dark shadow-xl">
+            <div className="sticky top-0 z-20 flex flex-col bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800">
                 <div className="flex items-center p-4 justify-between">
-                    <Link href="/" passHref>
-                      <Button variant="ghost" size="icon">
-                        <span className="material-symbols-outlined">arrow_back_ios_new</span>
-                      </Button>
+                    <Link href="/" className="text-[#181113] dark:text-white flex size-12 shrink-0 items-center">
+                        <span className="material-symbols-outlined text-2xl font-bold">arrow_back_ios</span>
                     </Link>
-                    <h2 className="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight flex-1 text-center">Guest List</h2>
-                    <div className="flex size-10 items-center justify-end">
-                        <DropdownMenu>
+                    <h2 className="text-[#181113] dark:text-white text-xl font-extrabold leading-tight tracking-tight flex-1 text-center">Guest List</h2>
+                    <div className="flex w-12 items-center justify-end">
+                       <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                    <MoreVertical className="h-5 w-5" />
-                                </Button>
+                                <button className="flex cursor-pointer items-center justify-center rounded-lg h-12 bg-transparent text-[#181113] dark:text-white">
+                                    <span className="material-symbols-outlined font-bold">more_horiz</span>
+                                </button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuItem onSelect={handleUploadClick}>
@@ -338,151 +334,149 @@ export default function GuestsPage() {
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
-                        <input
+                         <input
                             type="file"
                             ref={fileInputRef}
                             onChange={handleFileChange}
-                            style={{ display: 'none' }}
+                            className="hidden"
                             accept=".csv,text/csv"
                         />
                     </div>
                 </div>
-                 <div className="px-4 pb-4">
-                    <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
-                        <button onClick={() => setSideFilter('all')} className={cn("flex-1 py-2 text-sm font-semibold rounded-lg transition-colors", sideFilter === 'all' ? 'bg-white dark:bg-slate-700 text-primary shadow-sm' : 'text-muted-foreground')}>All</button>
-                        <button onClick={() => setSideFilter('bride')} className={cn("flex-1 py-2 text-sm font-semibold rounded-lg transition-colors", sideFilter === 'bride' ? 'bg-white dark:bg-slate-700 text-primary shadow-sm' : 'text-muted-foreground')}>Bride's</button>
-                        <button onClick={() => setSideFilter('groom')} className={cn("flex-1 py-2 text-sm font-semibold rounded-lg transition-colors", sideFilter === 'groom' ? 'bg-white dark:bg-slate-700 text-primary shadow-sm' : 'text-muted-foreground')}>Groom's</button>
+                <div className="px-4 pb-4">
+                    <div className="flex p-1 bg-[#f4f0f1] dark:bg-gray-900 rounded-2xl">
+                        <button onClick={() => setSideFilter('all')} className={cn("flex-1 py-2.5 text-sm font-bold rounded-xl transition-all", sideFilter === 'all' ? 'bg-white dark:bg-gray-800 text-primary shadow-sm ring-1 ring-black/5' : 'text-[#89616b] dark:text-gray-400')}>All Sides</button>
+                        <button onClick={() => setSideFilter('bride')} className={cn("flex-1 py-2.5 text-sm font-bold rounded-xl transition-all", sideFilter === 'bride' ? 'bg-white dark:bg-gray-800 text-primary shadow-sm ring-1 ring-black/5' : 'text-[#89616b] dark:text-gray-400')}>Bride's</button>
+                        <button onClick={() => setSideFilter('groom')} className={cn("flex-1 py-2.5 text-sm font-bold rounded-xl transition-all", sideFilter === 'groom' ? 'bg-white dark:bg-gray-800 text-primary shadow-sm ring-1 ring-black/5' : 'text-[#89616b] dark:text-gray-400')}>Groom's</button>
                     </div>
                 </div>
-                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 px-4 pb-4">
-                    <div className="flex flex-col gap-1 rounded-xl p-3 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
-                        <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">Total Invited</p>
-                        <p className="text-primary tracking-light text-xl font-bold leading-tight">{summary.total}</p>
+                <div className="flex flex-nowrap gap-3 px-4 pb-4 overflow-x-auto no-scrollbar">
+                    <div className="flex min-w-[120px] flex-1 flex-col gap-1 rounded-2xl p-4 border border-[#e6dbde] dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
+                        <p className="text-[#89616b] dark:text-gray-500 text-[10px] font-extrabold uppercase tracking-widest">Total Invited</p>
+                        <p className="text-primary tracking-tight text-2xl font-black leading-tight">{summary.total}</p>
                     </div>
-                    <div className="flex flex-col gap-1 rounded-xl p-3 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
-                        <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">Confirmed</p>
-                        <p className="text-green-600 tracking-light text-xl font-bold leading-tight">{summary.confirmed}</p>
+                    <div className="flex min-w-[120px] flex-1 flex-col gap-1 rounded-2xl p-4 border border-[#e6dbde] dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
+                        <p className="text-[#89616b] dark:text-gray-500 text-[10px] font-extrabold uppercase tracking-widest">Confirmed</p>
+                        <p className="text-green-600 tracking-tight text-2xl font-black leading-tight">{summary.confirmed}</p>
                     </div>
-                    <div className="flex flex-col gap-1 rounded-xl p-3 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
-                        <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">Pending</p>
-                        <p className="text-gray-500 tracking-light text-xl font-bold leading-tight">{summary.pending}</p>
-                    </div>
-                    <div className="flex flex-col gap-1 rounded-xl p-3 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
-                        <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">Veg</p>
-                        <p className="text-teal-600 tracking-light text-xl font-bold leading-tight">{summary.veg}</p>
-                    </div>
-                     <div className="flex flex-col gap-1 rounded-xl p-3 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
-                        <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">Non-Veg</p>
-                        <p className="text-orange-600 tracking-light text-xl font-bold leading-tight">{summary.nonVeg}</p>
+                    <div className="flex min-w-[120px] flex-1 flex-col gap-1 rounded-2xl p-4 border border-[#e6dbde] dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
+                        <p className="text-[#89616b] dark:text-gray-500 text-[10px] font-extrabold uppercase tracking-widest">Pending</p>
+                        <p className="text-gray-400 tracking-tight text-2xl font-black leading-tight">{summary.pending}</p>
                     </div>
                 </div>
-            </header>
-
-            <main className="pb-24">
-                <div className="px-4 py-3">
-                     <div className="relative">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                        <Input 
-                            className="pl-11 h-12 w-full bg-slate-100 dark:bg-slate-800 border-none rounded-xl"
-                            placeholder="Search guests..." 
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </div>
-                </div>
-                <div className="flex flex-wrap gap-2 px-4 pb-4">
-                    <button onClick={() => setStatusFilter('all')} className={cn("flex h-9 items-center justify-center gap-x-2 rounded-full px-4 shadow-sm transition-colors", statusFilter === 'all' ? 'bg-primary text-white' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700')}>
-                        <p className={cn("text-sm", statusFilter === 'all' ? 'font-semibold' : 'font-medium text-foreground dark:text-slate-300')}>All Guests</p>
-                    </button>
-                    {statusFilters.map(status => (
-                        <button key={status} onClick={() => setStatusFilter(status)} className={cn("flex h-9 items-center justify-center gap-x-2 rounded-full px-4 shadow-sm transition-colors", statusFilter === status ? 'bg-primary text-white' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700')}>
-                            <p className={cn("text-sm capitalize", statusFilter === status ? 'font-semibold' : 'font-medium text-foreground dark:text-slate-300')}>{status}</p>
-                        </button>
-                    ))}
-                </div>
-                
-                <div className="flex-1 px-2">
-                     <div className="px-3 py-2 flex items-center justify-between">
-                        <p className="text-muted-foreground text-xs font-bold uppercase tracking-widest">Showing {filteredGuests.length} Guests</p>
-                    </div>
-
-                    {filteredGuests.length === 0 ? (
-                        <div className="text-center p-10 flex flex-col items-center justify-center gap-4 text-muted-foreground">
-                             <span className="material-symbols-outlined text-6xl text-slate-400">groups</span>
-                             <h3 className="text-lg font-semibold text-foreground dark:text-slate-200">Your Guest List is Empty</h3>
-                            <p>Click the '+' button to start adding guests to your wedding.</p>
+            </div>
+            <div className="bg-white dark:bg-background-dark">
+                <div className="px-4 py-4">
+                    <div className="flex w-full items-stretch rounded-2xl h-12 bg-[#f4f0f1] dark:bg-gray-900 ring-1 ring-inset ring-gray-100 dark:ring-gray-800">
+                        <div className="text-[#89616b] flex items-center justify-center pl-4">
+                            <span className="material-symbols-outlined text-xl">search</span>
                         </div>
-                    ) : (
-                        <div className="space-y-2 p-2">
-                            {filteredGuests.map(guest => (
-                                <div key={guest.id} className={cn(
-                                    "bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4 group",
-                                    guest.status === 'declined' && 'opacity-60'
-                                )}>
-                                    <Avatar>
-                                        <AvatarFallback className="bg-primary/10 text-primary font-bold">
-                                            {guest.name.charAt(0).toUpperCase()}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2">
-                                            <p className="font-bold text-foreground">{guest.name}</p>
-                                            {guest.side !== 'both' && (
-                                                <span className={cn(
-                                                    "text-[10px] font-bold px-1.5 py-0.5 rounded border uppercase",
-                                                    guest.side === 'bride' ? 'bg-pink-50 dark:bg-pink-950/50 text-pink-600 dark:text-pink-400 border-pink-100 dark:border-pink-900/50' : 'bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-900/50'
-                                                )}>{guest.side}</span>
-                                            )}
-                                        </div>
-                                        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                                            {guest.group && (
-                                                <span className="font-medium">{guest.group}</span>
-                                            )}
-                                        </div>
+                        <input className="form-input flex w-full border-none bg-transparent h-full placeholder:text-[#89616b] px-3 text-base font-medium focus:ring-0" placeholder="Search guests..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                    </div>
+                </div>
+                <div className="flex gap-2 px-4 pb-4 overflow-x-auto no-scrollbar">
+                    <button onClick={() => setStatusFilter('all')} className={cn("flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full px-6", statusFilter === 'all' ? 'bg-primary text-white shadow-md shadow-primary/20' : 'bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800')}>
+                        <p className={cn("text-sm font-bold", statusFilter !== 'all' && "text-[#181113] dark:text-gray-300")}>All Guests</p>
+                    </button>
+                    <button onClick={() => setStatusFilter('confirmed')} className={cn("flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full px-6", statusFilter === 'confirmed' ? 'bg-primary text-white shadow-md shadow-primary/20' : 'bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800')}>
+                        <p className={cn("text-sm font-bold", statusFilter !== 'confirmed' && "text-[#181113] dark:text-gray-300")}>Confirmed</p>
+                    </button>
+                    <button onClick={() => setStatusFilter('pending')} className={cn("flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full px-6", statusFilter === 'pending' ? 'bg-primary text-white shadow-md shadow-primary/20' : 'bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800')}>
+                        <p className={cn("text-sm font-bold", statusFilter !== 'pending' && "text-[#181113] dark:text-gray-300")}>Pending</p>
+                    </button>
+                     <button onClick={() => setStatusFilter('declined')} className={cn("flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full px-6", statusFilter === 'declined' ? 'bg-primary text-white shadow-md shadow-primary/20' : 'bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800')}>
+                        <p className={cn("text-sm font-bold", statusFilter !== 'declined' && "text-[#181113] dark:text-gray-300")}>Declined</p>
+                    </button>
+                </div>
+            </div>
+            <div className="flex-1 overflow-y-auto px-4 pb-32">
+                <div className="py-2 flex items-center justify-between">
+                    <p className="text-[#89616b] text-[11px] font-black uppercase tracking-[0.15em]">Showing {filteredGuests.length} Guests</p>
+                    <div className="flex items-center gap-1 text-primary text-[11px] font-extrabold">
+                        <span>SORT: RECENT</span>
+                        <span className="material-symbols-outlined text-sm">unfold_more</span>
+                    </div>
+                </div>
+                 {filteredGuests.length > 0 ? (
+                    filteredGuests.map(guest => (
+                        <details key={guest.id} className="group bg-white dark:bg-gray-900 rounded-2xl my-3 shadow-sm border border-gray-100 dark:border-gray-800 transition-all duration-300 open:ring-2 open:ring-primary/20">
+                            <summary className="flex items-center gap-4 p-4 cursor-pointer outline-none">
+                                <div className="bg-primary/10 text-primary font-black flex items-center justify-center aspect-square rounded-full h-14 w-14 border-2 border-primary/20 shadow-inner text-2xl">
+                                    {guest.name.charAt(0).toUpperCase()}
+                                </div>
+                                <div className="flex-1 flex flex-col min-w-0">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <h3 className="text-[#181113] dark:text-white text-base font-extrabold leading-tight truncate">{guest.name}</h3>
+                                        {guest.side !== 'both' && (
+                                            <span className={cn(
+                                                "flex-shrink-0 text-[9px] font-black px-2 py-0.5 rounded-md border uppercase tracking-tighter",
+                                                guest.side === 'bride' ? 'bg-primary/10 text-primary border-primary/20' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 border-blue-100 dark:border-blue-800'
+                                            )}>{guest.side}</span>
+                                        )}
                                     </div>
-                                    <div className="flex items-center gap-1">
+                                    <div className="flex items-center gap-2">
                                         <span className={cn(
-                                            "px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
-                                            guest.status === 'confirmed' && 'bg-green-100 dark:bg-green-950/50 text-green-700 dark:text-green-400',
-                                            guest.status === 'pending' && 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400',
-                                            guest.status === 'declined' && 'bg-red-100 dark:bg-red-950/50 text-red-700 dark:text-red-400'
-                                        )}>
-                                            {guest.status}
-                                        </span>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                    <MoreVertical className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                {(guest.email || guest.phone || guest.notes || (guest.diet && guest.diet !== 'none')) && (
-                                                    <>
-                                                        <DropdownMenuLabel className="font-normal text-muted-foreground flex items-center gap-2">
-                                                            {guest.diet === 'veg' ? <><Leaf className="h-4 w-4 text-green-500" /> Veg</> : guest.diet === 'non-veg' ? <><Beef className="h-4 w-4 text-orange-500" /> Non-Veg</> : 'Diet'}
-                                                        </DropdownMenuLabel>
-                                                        {guest.email && <div className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none"><Mail className="w-4 h-4 text-muted-foreground"/>{guest.email}</div>}
-                                                        {guest.phone && <div className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none"><Phone className="w-4 h-4 text-muted-foreground"/>{guest.phone}</div>}
-                                                        {guest.notes && <div className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none"><FileText className="w-4 h-4 text-muted-foreground"/>{guest.notes}</div>}
-                                                        <DropdownMenuSeparator />
-                                                    </>
-                                                )}
-                                                <DropdownMenuItem onSelect={() => openGuestDialog(guest)}>
-                                                    <Pencil className="mr-2 h-4 w-4" /> Edit
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem onSelect={() => openDeleteDialog(guest)} className="text-destructive">
-                                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
+                                            "px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest",
+                                            guest.status === 'confirmed' && 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
+                                            guest.status === 'pending' && 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400',
+                                            guest.status === 'declined' && 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                                        )}>{guest.status}</span>
+                                        {guest.group && <span className="text-[#89616b] dark:text-gray-500 text-[10px] font-bold">• {guest.group}</span>}
                                     </div>
                                 </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </main>
-
+                                <span className="material-symbols-outlined text-gray-400 group-open:rotate-180 transition-transform">expand_more</span>
+                            </summary>
+                            <div className="px-4 pb-4 pt-2 border-t border-gray-50 dark:border-gray-800 space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    {guest.email && <div className="space-y-1">
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Email</p>
+                                        <p className="text-sm font-bold text-[#181113] dark:text-white flex items-center gap-1 truncate">
+                                            <span className="material-symbols-outlined text-primary text-base">mail</span>
+                                            {guest.email}
+                                        </p>
+                                    </div>}
+                                    {guest.phone && <div className="space-y-1">
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Phone</p>
+                                        <p className="text-sm font-bold text-[#181113] dark:text-white flex items-center gap-1">
+                                            <span className="material-symbols-outlined text-primary text-base">call</span>
+                                            {guest.phone}
+                                        </p>
+                                    </div>}
+                                </div>
+                                <div className={cn("space-y-1 p-3 rounded-xl", guest.notes ? 'bg-[#fef1f4] dark:bg-primary/5' : 'bg-gray-50 dark:bg-gray-800/50')}>
+                                    <p className={cn("text-[10px] font-black uppercase tracking-widest flex items-center gap-1", guest.notes ? "text-primary/60" : "text-gray-400")}>
+                                        <span className="material-symbols-outlined text-xs">notes</span>
+                                        Special Notes
+                                    </p>
+                                    <p className={cn("text-sm font-medium leading-relaxed", guest.notes ? "text-[#181113] dark:text-gray-300" : "text-gray-400 italic")}>{guest.notes || 'No notes added yet.'}</p>
+                                </div>
+                                <div className="flex gap-2 pt-2">
+                                    <button onClick={() => openGuestDialog(guest)} className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary/10 text-primary text-xs font-black uppercase tracking-widest border border-primary/20 active:bg-primary/20 transition-colors">
+                                        <span className="material-symbols-outlined text-lg">edit</span>
+                                        Edit
+                                    </button>
+                                    <button onClick={() => openDeleteDialog(guest)} className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-50 dark:bg-red-900/10 text-red-500 text-xs font-black uppercase tracking-widest border border-red-100 dark:border-red-900/20 active:bg-red-100 transition-colors">
+                                        <span className="material-symbols-outlined text-lg text-red-400">delete</span>
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
+                        </details>
+                    ))
+                 ) : (
+                    <div className="text-center p-10 flex flex-col items-center justify-center gap-4 text-muted-foreground h-full">
+                         <span className="material-symbols-outlined text-6xl text-slate-400">groups</span>
+                         <h3 className="text-lg font-semibold text-foreground dark:text-slate-200">No Guests Found</h3>
+                        <p>Your guest list is empty or your filters cleared everyone!</p>
+                    </div>
+                 )}
+            </div>
+            <div className="fixed bottom-24 right-6 z-30">
+                <button onClick={() => openGuestDialog(null)} className="flex size-14 items-center justify-center rounded-2xl bg-primary text-white shadow-xl shadow-primary/40 active:scale-90 transition-transform ring-4 ring-white dark:ring-background-dark">
+                    <span className="material-symbols-outlined text-3xl font-bold">add</span>
+                </button>
+            </div>
+            
              <Dialog open={isGuestDialogOpen} onOpenChange={setIsGuestDialogOpen}>
                 <DialogContent className="sm:max-w-[425px] grid-rows-[auto_minmax(0,1fr)_auto] p-0 max-h-[90dvh]">
                     <DialogHeader className="p-6 pb-0">
@@ -491,53 +485,53 @@ export default function GuestsPage() {
                     <ScrollArea className="h-full">
                       <div className="grid gap-4 py-4 px-6">
                           <div className="space-y-2">
-                              <Label htmlFor="name">Name</Label>
+                              <Label htmlFor="name" className="text-sm font-extrabold text-[#181113] dark:text-white uppercase tracking-wider">Name</Label>
                               <Input id="name" value={formState.name || ''} onChange={(e) => handleFormChange('name', e.target.value)} />
                           </div>
                           <div className="space-y-2">
-                              <Label htmlFor="group">Group</Label>
+                              <Label htmlFor="group" className="text-sm font-extrabold text-[#181113] dark:text-white uppercase tracking-wider">Group</Label>
                               <Input id="group" value={formState.group || ''} onChange={(e) => handleFormChange('group', e.target.value)} placeholder="e.g. Family, Friends" />
                           </div>
                           <div className="space-y-2">
-                              <Label>Side</Label>
+                              <Label className="text-sm font-extrabold text-[#181113] dark:text-white uppercase tracking-wider">Side</Label>
                               <RadioGroup value={formState.side} onValueChange={(val) => handleFormChange('side', val as 'bride' | 'groom' | 'both')} className="flex gap-4 pt-1">
-                                  <div className="flex items-center space-x-2"><RadioGroupItem value="bride" id="r-bride" /><Label htmlFor="r-bride" className="font-normal">Bride</Label></div>
-                                  <div className="flex items-center space-x-2"><RadioGroupItem value="groom" id="r-groom" /><Label htmlFor="r-groom" className="font-normal">Groom</Label></div>
-                                  <div className="flex items-center space-x-2"><RadioGroupItem value="both" id="r-both" /><Label htmlFor="r-both" className="font-normal">Both</Label></div>
+                                  <div className="flex items-center space-x-2"><RadioGroupItem value="bride" id="r-bride" /><Label htmlFor="r-bride" className="font-normal text-base">Bride</Label></div>
+                                  <div className="flex items-center space-x-2"><RadioGroupItem value="groom" id="r-groom" /><Label htmlFor="r-groom" className="font-normal text-base">Groom</Label></div>
+                                  <div className="flex items-center space-x-2"><RadioGroupItem value="both" id="r-both" /><Label htmlFor="r-both" className="font-normal text-base">Both</Label></div>
                               </RadioGroup>
                           </div>
                           <div className="space-y-2">
-                              <Label>Status</Label>
+                              <Label className="text-sm font-extrabold text-[#181113] dark:text-white uppercase tracking-wider">Status</Label>
                               <RadioGroup value={formState.status} onValueChange={(val) => handleFormChange('status', val as 'pending' | 'confirmed' | 'declined')} className="flex gap-4 pt-1">
-                                  <div className="flex items-center space-x-2"><RadioGroupItem value="pending" id="s-pending" /><Label htmlFor="s-pending" className="font-normal">Pending</Label></div>
-                                  <div className="flex items-center space-x-2"><RadioGroupItem value="confirmed" id="s-confirmed" /><Label htmlFor="s-confirmed" className="font-normal">Confirmed</Label></div>
-                                  <div className="flex items-center space-x-2"><RadioGroupItem value="declined" id="s-declined" /><Label htmlFor="s-declined" className="font-normal">Declined</Label></div>
+                                  <div className="flex items-center space-x-2"><RadioGroupItem value="pending" id="s-pending" /><Label htmlFor="s-pending" className="font-normal text-base">Pending</Label></div>
+                                  <div className="flex items-center space-x-2"><RadioGroupItem value="confirmed" id="s-confirmed" /><Label htmlFor="s-confirmed" className="font-normal text-base">Confirmed</Label></div>
+                                  <div className="flex items-center space-x-2"><RadioGroupItem value="declined" id="s-declined" /><Label htmlFor="s-declined" className="font-normal text-base">Declined</Label></div>
                               </RadioGroup>
                           </div>
                           <div className="space-y-2">
-                              <Label>Dietary Preference</Label>
+                              <Label className="text-sm font-extrabold text-[#181113] dark:text-white uppercase tracking-wider">Dietary Preference</Label>
                               <RadioGroup value={formState.diet || 'none'} onValueChange={(val) => handleFormChange('diet', val as 'none' | 'veg' | 'non-veg')} className="flex gap-4 pt-1">
-                                  <div className="flex items-center space-x-2"><RadioGroupItem value="none" id="d-none" /><Label htmlFor="d-none" className="font-normal">None</Label></div>
-                                  <div className="flex items-center space-x-2"><RadioGroupItem value="veg" id="d-veg" /><Label htmlFor="d-veg" className="font-normal">Veg</Label></div>
-                                  <div className="flex items-center space-x-2"><RadioGroupItem value="non-veg" id="d-nonveg" /><Label htmlFor="d-nonveg" className="font-normal">Non-Veg</Label></div>
+                                  <div className="flex items-center space-x-2"><RadioGroupItem value="none" id="d-none" /><Label htmlFor="d-none" className="font-normal text-base">None</Label></div>
+                                  <div className="flex items-center space-x-2"><RadioGroupItem value="veg" id="d-veg" /><Label htmlFor="d-veg" className="font-normal text-base">Veg</Label></div>
+                                  <div className="flex items-center space-x-2"><RadioGroupItem value="non-veg" id="d-nonveg" /><Label htmlFor="d-nonveg" className="font-normal text-base">Non-Veg</Label></div>
                               </RadioGroup>
                           </div>
                           <div className="space-y-2">
-                              <Label htmlFor="email">Email</Label>
+                              <Label htmlFor="email" className="text-sm font-extrabold text-[#181113] dark:text-white uppercase tracking-wider">Email</Label>
                               <Input id="email" type="email" value={formState.email || ''} onChange={(e) => handleFormChange('email', e.target.value)} />
                           </div>
                           <div className="space-y-2">
-                              <Label htmlFor="phone">Phone</Label>
+                              <Label htmlFor="phone" className="text-sm font-extrabold text-[#181113] dark:text-white uppercase tracking-wider">Phone</Label>
                               <Input id="phone" type="tel" value={formState.phone || ''} onChange={(e) => handleFormChange('phone', e.target.value)} />
                           </div>
                           <div className="space-y-2">
-                              <Label htmlFor="notes">Notes</Label>
-                              <Textarea id="notes" value={formState.notes || ''} onChange={(e) => handleFormChange('notes', e.target.value)} placeholder="e.g. Party of 2, allergies"/>
+                              <Label htmlFor="notes" className="text-sm font-extrabold text-[#181113] dark:text-white uppercase tracking-wider">Notes</Label>
+                              <Textarea id="notes" value={formState.notes || ''} onChange={(e) => handleFormChange('notes', e.target.value)} placeholder="e.g. Party size, allergies, +1s..."/>
                           </div>
                       </div>
                     </ScrollArea>
                     <DialogFooter className="p-6 pt-0 border-t mt-4">
-                        <Button onClick={handleSaveGuest} className="w-full mt-4">Save Guest</Button>
+                        <Button onClick={handleSaveGuest} className="w-full mt-4 h-12 text-base">Save Guest</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
@@ -556,12 +550,6 @@ export default function GuestsPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-
-            <div className="fixed bottom-28 right-6 z-30">
-                <Button onClick={() => openGuestDialog(null)} className="w-14 h-14 rounded-full shadow-lg shadow-primary/30 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform">
-                    <span className="material-symbols-outlined text-3xl">add</span>
-                </Button>
-            </div>
         </div>
     );
 }
