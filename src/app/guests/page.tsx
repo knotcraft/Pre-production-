@@ -1,7 +1,6 @@
 
 'use client';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Dialog,
@@ -44,6 +43,7 @@ import { Loader2, Upload, Download, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 export default function GuestsPage() {
     const { user } = useUser();
@@ -263,7 +263,7 @@ export default function GuestsPage() {
     }
 
     return (
-        <>
+        <div className="flex flex-col h-full">
             <header className="sticky top-0 z-20 flex flex-col bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800">
                 <div className="flex items-center p-4 justify-between">
                     <Link href="/" className="text-[#181113] dark:text-white flex size-12 shrink-0 items-center">
@@ -352,15 +352,11 @@ export default function GuestsPage() {
                             {filteredGuests.map(guest => (
                                 <AccordionItem value={guest.id} key={guest.id} className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 data-[state=open]:ring-2 data-[state=open]:ring-primary/20 overflow-hidden">
                                     <AccordionTrigger className="flex items-center gap-4 p-4 text-left w-full hover:no-underline">
-                                        <div className="relative h-14 w-14 aspect-square rounded-full border-2 border-primary/20 shadow-inner overflow-hidden flex-shrink-0">
-                                            <Image
-                                                src={`https://picsum.photos/seed/${guest.id.replace(/\W/g, '')}/100/100`}
-                                                alt={guest.name}
-                                                fill
-                                                className="object-cover"
-                                                data-ai-hint="person portrait"
-                                            />
-                                        </div>
+                                        <Avatar className="h-14 w-14 text-xl flex-shrink-0 border-2 border-primary/20 shadow-inner">
+                                            <AvatarFallback className="bg-primary/10 text-primary font-extrabold text-2xl">
+                                                {guest.name ? guest.name.charAt(0).toUpperCase() : ''}
+                                            </AvatarFallback>
+                                        </Avatar>
                                         <div className="flex-1 flex flex-col min-w-0">
                                             <div className="flex items-center gap-2 mb-1">
                                                 <h3 className="text-[#181113] dark:text-white text-base font-extrabold leading-tight truncate">{guest.name}</h3>
@@ -507,7 +503,6 @@ export default function GuestsPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-        </>
+        </div>
     );
-
-    
+}
