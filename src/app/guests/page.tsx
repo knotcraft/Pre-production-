@@ -60,7 +60,7 @@ export default function GuestsPage() {
     const [guestToDelete, setGuestToDelete] = useState<Guest | null>(null);
 
     const [formState, setFormState] = useState<Partial<Guest>>({
-        name: '', side: 'bride', status: 'pending', group: '', email: '', phone: '', notes: '', diet: 'none'
+        name: '', side: 'bride', status: 'pending', group: '', email: '', phone: '', notes: '', diet: 'none', type: 'individual'
     });
 
     const [sideFilter, setSideFilter] = useState<'all' | 'bride' | 'groom'>('all');
@@ -92,7 +92,11 @@ export default function GuestsPage() {
         }
     }, [user, database]);
     
-    const { filteredGuests, summary } = useMemo(() => {
+    const { filteredGuests, summary, filteredGuestCount } = useMemo(() => {
+        const getGuestCount = (list: Guest[]) => list.reduce((sum, guest) => {
+            return sum + (guest.type === 'family' ? (guest.memberCount || 1) : 1);
+        }, 0);
+
         let baseGuests = guests;
 
         if (sideFilter !== 'all') {
@@ -100,9 +104,9 @@ export default function GuestsPage() {
         }
 
         const summaryData = {
-            total: baseGuests.length,
-            confirmed: baseGuests.filter(g => g.status === 'confirmed').length,
-            pending: baseGuests.filter(g => g.status === 'pending').length,
+            total: getGuestCount(baseGuests),
+            confirmed: getGuestCount(baseGuests.filter(g => g.status === 'confirmed')),
+            pending: getGuestCount(baseGuests.filter(g => g.status === 'pending')),
         };
         
         let displayGuests = guests;
@@ -121,13 +125,15 @@ export default function GuestsPage() {
                 (g.group && g.group.toLowerCase().includes(searchQuery.toLowerCase()))
             );
         }
+        
+        const filteredGuestCount = getGuestCount(displayGuests);
 
-        return { filteredGuests: displayGuests, summary: summaryData };
+        return { filteredGuests: displayGuests, summary: summaryData, filteredGuestCount };
     }, [guests, sideFilter, statusFilter, searchQuery]);
 
     const openGuestDialog = (guest: Guest | null) => {
         setActiveGuest(guest);
-        setFormState(guest || { name: '', side: 'bride', status: 'pending', group: '', email: '', phone: '', notes: '', diet: 'none' });
+        setFormState(guest || { name: '', side: 'bride', status: 'pending', group: '', email: '', phone: '', notes: '', diet: 'none', type: 'individual' });
         setIsGuestDialogOpen(true);
     };
     
@@ -138,17 +144,37 @@ export default function GuestsPage() {
 
     const handleSaveGuest = async () => {
         if (!user || !database || !formState.name) {
-            toast({ variant: 'destructive', title: 'Invalid input', description: 'Guest name is required.' });
+            toast({ variant: 'destructive', title: 'Invalid input', description: 'Guest name or Family name is required.' });
             return;
         }
     
-        const guestData = { ...formState, notes: formState.notes || '', group: formState.group || '' };
+        const guestData: Partial<Guest> = { 
+            ...formState,
+            type: formState.type || 'individual'
+        };
+
+        if (guestData.type === 'family') {
+            const memberCount = parseInt(String(guestData.memberCount) || '0', 10);
+            if (isNaN(memberCount) || memberCount <= 0) {
+                toast({ variant: 'destructive', title: 'Invalid input', description: 'Number of guests for a family must be a positive number.' });
+                return;
+            }
+            guestData.memberCount = memberCount;
+            // Clear individual-specific fields
+            guestData.email = '';
+            guestData.phone = '';
+            guestData.diet = 'none';
+        } else {
+            // Clear family-specific fields
+            guestData.memberCount = undefined;
+        }
+
         delete guestData.id;
     
         try {
             if (activeGuest?.id) {
                 const guestRef = ref(database, `users/${user.uid}/guests/${activeGuest.id}`);
-                await update(guestRef, guestData);
+                await update(guestRef, guestData as any);
                 toast({ variant: 'success', title: 'Success', description: 'Guest updated.' });
             } else {
                 const guestsRef = ref(database, `users/${user.uid}/guests`);
@@ -184,16 +210,17 @@ export default function GuestsPage() {
         }
     };
     
-    const handleFormChange = (field: keyof Omit<Guest, 'id'>, value: string) => {
+    const handleFormChange = (field: keyof Guest, value: any) => {
         setFormState(prev => ({ ...prev, [field]: value }));
     };
 
     const handleDownloadTemplate = () => {
-        const headers = ['name', 'side', 'status', 'group', 'email', 'phone', 'notes', 'diet'];
+        const headers = ['name', 'side', 'status', 'group', 'email', 'phone', 'notes', 'diet', 'type', 'memberCount'];
         const sampleData = [
-            'John Doe', 'bride', 'pending', 'College Friends', 'john.doe@example.com', '123-456-7890', 'Allergic to peanuts', 'veg'
+            'John Doe', 'bride', 'pending', 'College Friends', 'john.doe@example.com', '123-456-7890', 'Allergic to peanuts', 'veg', 'individual', ''
         ];
-        const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + sampleData.join(",");
+        const familySample = [ 'The Smiths', 'groom', 'confirmed', 'Family', '', '', 'Bringing 2 kids', '', 'family', '4' ];
+        const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + sampleData.join(",") + "\n" + familySample.join(",");
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
         link.setAttribute("href", encodedUri);
@@ -209,7 +236,7 @@ export default function GuestsPage() {
             return;
         }
 
-        const headers = ['name', 'side', 'status', 'group', 'email', 'phone', 'notes', 'diet'];
+        const headers = ['name', 'side', 'status', 'group', 'email', 'phone', 'notes', 'diet', 'type', 'memberCount'];
         
         const escapeCsvValue = (value: any) => {
             if (value === null || value === undefined) {
@@ -269,6 +296,8 @@ export default function GuestsPage() {
                     guestObj[header] = values[index]?.trim() || '';
                 });
 
+                const memberCount = parseInt(guestObj.membercount, 10);
+
                 return {
                     name: guestObj.name,
                     side: ['bride', 'groom', 'both'].includes(guestObj.side) ? guestObj.side as Guest['side'] : 'both',
@@ -278,6 +307,8 @@ export default function GuestsPage() {
                     phone: guestObj.phone || '',
                     notes: guestObj.notes || '',
                     diet: ['none', 'veg', 'non-veg'].includes(guestObj.diet) ? guestObj.diet as Guest['diet'] : 'none',
+                    type: guestObj.type === 'family' ? 'family' : 'individual',
+                    memberCount: isNaN(memberCount) ? undefined : memberCount,
                 };
             }).filter(g => g.name);
 
@@ -293,7 +324,7 @@ export default function GuestsPage() {
                     if(newGuestKey) updates[newGuestKey] = guest;
                 });
                 await update(ref(database, `users/${user.uid}/guests`), updates);
-                toast({ variant: 'success', title: 'Upload Successful', description: `${guestsToUpload.length} guests imported.` });
+                toast({ variant: 'success', title: 'Upload Successful', description: `${guestsToUpload.length} guest entries imported.` });
             } catch (e) {
                 toast({ variant: 'destructive', title: 'Upload Failed', description: 'An error occurred during upload.' });
             }
@@ -454,7 +485,7 @@ export default function GuestsPage() {
                 </div>
                 <div className="flex-1 overflow-y-auto px-4 pb-24">
                     <div className="py-2 flex items-center justify-between">
-                        <p className="text-muted-foreground text-[11px] font-black uppercase tracking-[0.15em]">Showing {filteredGuests.length} Guests</p>
+                        <p className="text-muted-foreground text-[11px] font-black uppercase tracking-[0.15em]">Showing {filteredGuestCount} Guests</p>
                         <div className="flex items-center gap-1 text-primary text-[11px] font-extrabold">
                             <span>SORT: RECENT</span>
                             <span className="material-symbols-outlined text-sm">unfold_more</span>
@@ -462,12 +493,14 @@ export default function GuestsPage() {
                     </div>
                     {filteredGuests.length > 0 && guests.length > 0 ? (
                         <Accordion type="single" collapsible className="space-y-3">
-                            {filteredGuests.map(guest => (
+                            {filteredGuests.map(guest => {
+                                const isFamily = guest.type === 'family';
+                                return (
                                 <AccordionItem value={guest.id} key={guest.id} className="bg-card rounded-2xl shadow-sm border data-[state=open]:ring-2 data-[state=open]:ring-primary/20 overflow-hidden">
                                     <AccordionTrigger className="flex items-center gap-4 p-4 text-left w-full hover:no-underline">
                                         <Avatar className="h-14 w-14 text-xl flex-shrink-0 border-2 border-primary/20 shadow-inner">
                                             <AvatarFallback className="bg-primary/10 text-primary font-extrabold text-2xl">
-                                                {guest.name ? guest.name.charAt(0).toUpperCase() : ''}
+                                                {isFamily ? <span className="material-symbols-outlined">house</span> : (guest.name ? guest.name.charAt(0).toUpperCase() : '')}
                                             </AvatarFallback>
                                         </Avatar>
                                         <div className="flex-1 flex flex-col min-w-0">
@@ -486,28 +519,41 @@ export default function GuestsPage() {
                                                     guest.status === 'confirmed' && 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
                                                     guest.status === 'pending' && 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
                                                 )}>{guest.status}</span>
-                                                {guest.group && <span className="text-muted-foreground text-[10px] font-bold">• {guest.group}</span>}
+                                                {isFamily ?
+                                                    <span className="text-muted-foreground text-[10px] font-bold">• Family</span> :
+                                                    (guest.group && <span className="text-muted-foreground text-[10px] font-bold">• {guest.group}</span>)
+                                                }
                                             </div>
                                         </div>
                                         <ChevronDown className="h-5 w-5 shrink-0 transition-transform duration-200 text-gray-400 data-[state=open]:rotate-180" />
                                     </AccordionTrigger>
                                     <AccordionContent className="px-4 pb-4 pt-2 border-t border-secondary space-y-4">
-                                        <div className="grid grid-cols-2 gap-4">
-                                            {guest.email && <div className="space-y-1">
-                                                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Email</p>
-                                                <p className="text-sm font-bold text-foreground flex items-center gap-1 truncate">
-                                                    <span className="material-symbols-outlined text-primary text-base">mail</span>
-                                                    {guest.email}
-                                                </p>
-                                            </div>}
-                                            {guest.phone && <div className="space-y-1">
-                                                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Phone</p>
+                                        {isFamily ? (
+                                            <div className="space-y-1">
+                                                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Number of Guests</p>
                                                 <p className="text-sm font-bold text-foreground flex items-center gap-1">
-                                                    <span className="material-symbols-outlined text-primary text-base">call</span>
-                                                    {guest.phone}
+                                                    <span className="material-symbols-outlined text-primary text-base">groups</span>
+                                                    {guest.memberCount}
                                                 </p>
-                                            </div>}
-                                        </div>
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-2 gap-4">
+                                                {guest.email && <div className="space-y-1">
+                                                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Email</p>
+                                                    <p className="text-sm font-bold text-foreground flex items-center gap-1 truncate">
+                                                        <span className="material-symbols-outlined text-primary text-base">mail</span>
+                                                        {guest.email}
+                                                    </p>
+                                                </div>}
+                                                {guest.phone && <div className="space-y-1">
+                                                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Phone</p>
+                                                    <p className="text-sm font-bold text-foreground flex items-center gap-1">
+                                                        <span className="material-symbols-outlined text-primary text-base">call</span>
+                                                        {guest.phone}
+                                                    </p>
+                                                </div>}
+                                            </div>
+                                        )}
                                         <div className={cn("space-y-1 p-3 rounded-xl", guest.notes ? 'bg-primary/5' : 'bg-secondary')}>
                                             <p className={cn("text-[10px] font-black uppercase tracking-widest flex items-center gap-1", guest.notes ? "text-primary/80" : "text-muted-foreground")}>
                                                 <span className="material-symbols-outlined text-xs">notes</span>
@@ -527,7 +573,8 @@ export default function GuestsPage() {
                                         </div>
                                     </AccordionContent>
                                 </AccordionItem>
-                            ))}
+                                )
+                            })}
                         </Accordion>
                     ) : guests.length > 0 ? (
                         <div className="text-center p-10 flex flex-col items-center justify-center gap-4 text-muted-foreground h-full">
@@ -551,48 +598,74 @@ export default function GuestsPage() {
                     </DialogHeader>
                     <ScrollArea className="h-full">
                       <div className="grid gap-4 py-4 px-6">
-                          <div className="space-y-2">
-                              <Label htmlFor="name" className="text-sm font-extrabold text-foreground uppercase tracking-wider">Name</Label>
-                              <Input id="name" value={formState.name || ''} onChange={(e) => handleFormChange('name', e.target.value)} />
-                          </div>
-                          <div className="space-y-2">
-                              <Label htmlFor="group" className="text-sm font-extrabold text-foreground uppercase tracking-wider">Group</Label>
-                              <Input id="group" value={formState.group || ''} onChange={(e) => handleFormChange('group', e.target.value)} placeholder="e.g. Family, Friends" />
-                          </div>
-                          <div className="space-y-2">
-                              <Label className="text-sm font-extrabold text-foreground uppercase tracking-wider">Side</Label>
-                              <RadioGroup value={formState.side} onValueChange={(val) => handleFormChange('side', val as 'bride' | 'groom' | 'both')} className="flex gap-4 pt-1">
-                                  <div className="flex items-center space-x-2"><RadioGroupItem value="bride" id="r-bride" /><Label htmlFor="r-bride" className="font-normal text-base">Bride</Label></div>
-                                  <div className="flex items-center space-x-2"><RadioGroupItem value="groom" id="r-groom" /><Label htmlFor="r-groom" className="font-normal text-base">Groom</Label></div>
-                                  <div className="flex items-center space-x-2"><RadioGroupItem value="both" id="r-both" /><Label htmlFor="r-both" className="font-normal text-base">Both</Label></div>
-                              </RadioGroup>
-                          </div>
-                          <div className="space-y-2">
-                              <Label className="text-sm font-extrabold text-foreground uppercase tracking-wider">Status</Label>
-                              <RadioGroup value={formState.status} onValueChange={(val) => handleFormChange('status', val as 'pending' | 'confirmed')} className="flex gap-4 pt-1">
-                                  <div className="flex items-center space-x-2"><RadioGroupItem value="pending" id="s-pending" /><Label htmlFor="s-pending" className="font-normal text-base">Pending</Label></div>
-                                  <div className="flex items-center space-x-2"><RadioGroupItem value="confirmed" id="s-confirmed" /><Label htmlFor="s-confirmed" className="font-normal text-base">Confirmed</Label></div>
-                              </RadioGroup>
-                          </div>
-                          <div className="space-y-2">
-                              <Label className="text-sm font-extrabold text-foreground uppercase tracking-wider">Dietary Preference</Label>
-                              <RadioGroup value={formState.diet || 'none'} onValueChange={(val) => handleFormChange('diet', val as 'none' | 'veg' | 'non-veg')} className="flex gap-4 pt-1">
-                                  <div className="flex items-center space-x-2"><RadioGroupItem value="none" id="d-none" /><Label htmlFor="d-none" className="font-normal text-base">None</Label></div>
-                                  <div className="flex items-center space-x-2"><RadioGroupItem value="veg" id="d-veg" /><Label htmlFor="d-veg" className="font-normal text-base">Veg</Label></div>
-                                  <div className="flex items-center space-x-2"><RadioGroupItem value="non-veg" id="d-nonveg" /><Label htmlFor="d-nonveg" className="font-normal text-base">Non-Veg</Label></div>
-                              </RadioGroup>
-                          </div>
-                          <div className="space-y-2">
-                              <Label htmlFor="email" className="text-sm font-extrabold text-foreground uppercase tracking-wider">Email</Label>
-                              <Input id="email" type="email" value={formState.email || ''} onChange={(e) => handleFormChange('email', e.target.value)} />
-                          </div>
-                          <div className="space-y-2">
-                              <Label htmlFor="phone" className="text-sm font-extrabold text-foreground uppercase tracking-wider">Phone</Label>
-                              <Input id="phone" type="tel" value={formState.phone || ''} onChange={(e) => handleFormChange('phone', e.target.value)} />
-                          </div>
+                            <div className="space-y-2">
+                                <Label className="text-sm font-extrabold text-foreground uppercase tracking-wider">Guest Type</Label>
+                                <RadioGroup value={formState.type || 'individual'} onValueChange={(val) => handleFormChange('type', val as 'individual' | 'family')} className="flex gap-4 pt-1">
+                                    <div className="flex items-center space-x-2"><RadioGroupItem value="individual" id="t-individual" /><Label htmlFor="t-individual" className="font-normal text-base">Individual</Label></div>
+                                    <div className="flex items-center space-x-2"><RadioGroupItem value="family" id="t-family" /><Label htmlFor="t-family" className="font-normal text-base">Family</Label></div>
+                                </RadioGroup>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="group" className="text-sm font-extrabold text-foreground uppercase tracking-wider">Group</Label>
+                                <Input id="group" value={formState.group || ''} onChange={(e) => handleFormChange('group', e.target.value)} placeholder="e.g. Family, Friends" />
+                            </div>
+
+                            {(formState.type || 'individual') === 'individual' ? (
+                                <>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="name" className="text-sm font-extrabold text-foreground uppercase tracking-wider">Name</Label>
+                                        <Input id="name" value={formState.name || ''} onChange={(e) => handleFormChange('name', e.target.value)} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-sm font-extrabold text-foreground uppercase tracking-wider">Dietary Preference</Label>
+                                        <RadioGroup value={formState.diet || 'none'} onValueChange={(val) => handleFormChange('diet', val as 'none' | 'veg' | 'non-veg')} className="flex gap-4 pt-1">
+                                            <div className="flex items-center space-x-2"><RadioGroupItem value="none" id="d-none" /><Label htmlFor="d-none" className="font-normal text-base">None</Label></div>
+                                            <div className="flex items-center space-x-2"><RadioGroupItem value="veg" id="d-veg" /><Label htmlFor="d-veg" className="font-normal text-base">Veg</Label></div>
+                                            <div className="flex items-center space-x-2"><RadioGroupItem value="non-veg" id="d-nonveg" /><Label htmlFor="d-nonveg" className="font-normal text-base">Non-Veg</Label></div>
+                                        </RadioGroup>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="email" className="text-sm font-extrabold text-foreground uppercase tracking-wider">Email</Label>
+                                        <Input id="email" type="email" value={formState.email || ''} onChange={(e) => handleFormChange('email', e.target.value)} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="phone" className="text-sm font-extrabold text-foreground uppercase tracking-wider">Phone</Label>
+                                        <Input id="phone" type="tel" value={formState.phone || ''} onChange={(e) => handleFormChange('phone', e.target.value)} />
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="name" className="text-sm font-extrabold text-foreground uppercase tracking-wider">Family / House Name</Label>
+                                        <Input id="name" value={formState.name || ''} onChange={(e) => handleFormChange('name', e.target.value)} placeholder="e.g. The Smith Family" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="memberCount" className="text-sm font-extrabold text-foreground uppercase tracking-wider">Number of Guests</Label>
+                                        <Input id="memberCount" type="number" value={formState.memberCount || ''} onChange={(e) => handleFormChange('memberCount', e.target.value)} placeholder="e.g. 4" />
+                                    </div>
+                                </>
+                            )}
+
+                            <div className="space-y-2">
+                                <Label className="text-sm font-extrabold text-foreground uppercase tracking-wider">Side</Label>
+                                <RadioGroup value={formState.side} onValueChange={(val) => handleFormChange('side', val as 'bride' | 'groom' | 'both')} className="flex gap-4 pt-1">
+                                    <div className="flex items-center space-x-2"><RadioGroupItem value="bride" id="r-bride" /><Label htmlFor="r-bride" className="font-normal text-base">Bride</Label></div>
+                                    <div className="flex items-center space-x-2"><RadioGroupItem value="groom" id="r-groom" /><Label htmlFor="r-groom" className="font-normal text-base">Groom</Label></div>
+                                    <div className="flex items-center space-x-2"><RadioGroupItem value="both" id="r-both" /><Label htmlFor="r-both" className="font-normal text-base">Both</Label></div>
+                                </RadioGroup>
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-sm font-extrabold text-foreground uppercase tracking-wider">Status</Label>
+                                <RadioGroup value={formState.status} onValueChange={(val) => handleFormChange('status', val as 'pending' | 'confirmed')} className="flex gap-4 pt-1">
+                                    <div className="flex items-center space-x-2"><RadioGroupItem value="pending" id="s-pending" /><Label htmlFor="s-pending" className="font-normal text-base">Pending</Label></div>
+                                    <div className="flex items-center space-x-2"><RadioGroupItem value="confirmed" id="s-confirmed" /><Label htmlFor="s-confirmed" className="font-normal text-base">Confirmed</Label></div>
+                                </RadioGroup>
+                            </div>
+                          
                           <div className="space-y-2">
                               <Label htmlFor="notes" className="text-sm font-extrabold text-foreground uppercase tracking-wider">Notes</Label>
-                              <Textarea id="notes" value={formState.notes || ''} onChange={(e) => handleFormChange('notes', e.target.value)} placeholder="e.g. Party size, allergies, +1s..."/>
+                              <Textarea id="notes" value={formState.notes || ''} onChange={(e) => handleFormChange('notes', e.target.value)} placeholder="e.g. Allergies, +1s..."/>
                           </div>
                       </div>
                     </ScrollArea>

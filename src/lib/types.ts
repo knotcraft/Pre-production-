@@ -26,7 +26,7 @@ export interface BudgetData {
 
 export interface Guest {
   id: string;
-  name: string;
+  name: string; // For individual: guest name, for family: house name
   side: 'bride' | 'groom' | 'both';
   status: 'pending' | 'confirmed';
   group?: string;
@@ -35,6 +35,8 @@ export interface Guest {
   address?: string;
   notes?: string;
   diet?: 'none' | 'veg' | 'non-veg';
+  type?: 'individual' | 'family';
+  memberCount?: number;
 }
 
 export interface Task {
