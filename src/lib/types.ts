@@ -36,4 +36,11 @@ export interface Guest {
   notes?: string;
   diet?: 'none' | 'veg' | 'non-veg';
 }
-    
+
+export interface Task {
+  id: string;
+  title: string;
+  dueDate: string;
+  completed: boolean;
+  notes?: string;
+}

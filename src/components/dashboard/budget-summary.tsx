@@ -1,3 +1,4 @@
+
 'use client';
 import { useFirebase, useUser } from '@/firebase';
 import { ref, onValue } from 'firebase/database';
@@ -5,19 +6,40 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Wallet, Pencil } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type BudgetData = {
     total: number;
     spent: number;
 };
 
+function BudgetSummarySkeleton() {
+  return (
+    <div className="relative overflow-hidden rounded-2xl bg-slate-100 dark:bg-slate-800 p-6 shadow-lg h-[190px]">
+      <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-slate-200/50 dark:bg-slate-700/50" />
+      <div className="absolute -left-12 -bottom-12 h-32 w-32 rounded-full bg-slate-200/50 dark:bg-slate-700/50" />
+      <div className="relative z-10 animate-pulse">
+        <Skeleton className="h-4 w-32 mb-4 bg-slate-300 dark:bg-slate-700" />
+        <Skeleton className="h-10 w-48 mb-8 bg-slate-300 dark:bg-slate-700" />
+        <Skeleton className="h-2 w-full mb-3 rounded-full bg-slate-300 dark:bg-slate-700" />
+        <div className="flex justify-between">
+          <Skeleton className="h-3 w-24 bg-slate-300 dark:bg-slate-700" />
+          <Skeleton className="h-3 w-28 bg-slate-300 dark:bg-slate-700" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function BudgetSummary() {
   const { user } = useUser();
   const { database } = useFirebase();
   const [budget, setBudget] = useState<BudgetData>({ total: 0, spent: 0 });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (user && database) {
+      setLoading(true);
       const budgetRef = ref(database, 'users/' + user.uid + '/budget');
       const unsubscribe = onValue(budgetRef, (snapshot) => {
         if (snapshot.exists()) {
@@ -36,12 +58,19 @@ export function BudgetSummary() {
         } else {
             setBudget({ total: 0, spent: 0 });
         }
+        setLoading(false);
       });
 
       return () => unsubscribe();
+    } else if (!user) {
+        setLoading(false);
     }
   }, [user, database]);
   
+  if (loading) {
+    return <BudgetSummarySkeleton />;
+  }
+
   const { spent, total } = budget;
   const remainingBudget = total - spent;
   const budgetPercentage = total > 0 ? (spent / total) * 100 : 0;

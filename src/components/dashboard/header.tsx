@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -8,6 +9,7 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useUser, useFirebase } from '@/firebase';
 import { ref, get } from 'firebase/database';
 import { useEffect, useState } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type UserData = {
     name: string;
@@ -19,17 +21,22 @@ export function Header() {
   const { user } = useUser();
   const { database, auth } = useFirebase();
   const [userData, setUserData] = useState<UserData | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (user && database) {
+      setLoading(true);
       const fetchUserData = async () => {
         const userRef = ref(database, 'users/' + user.uid);
         const snapshot = await get(userRef);
         if (snapshot.exists()) {
           setUserData(snapshot.val() as UserData);
         }
+        setLoading(false);
       };
       fetchUserData();
+    } else if (!user) {
+        setLoading(false);
     }
   }, [user, database]);
 
@@ -56,9 +63,13 @@ export function Header() {
       <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-black/60" />
       <div className="relative z-10 flex h-full flex-col justify-between p-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold tracking-tight text-white">
-            {userData ? `${userData.name} & ${userData.partnerName}` : 'Our Big Day'}
-          </h1>
+          {loading ? (
+            <Skeleton className="h-8 w-48 bg-white/30" />
+          ) : (
+            <h1 className="text-2xl font-bold tracking-tight text-white">
+              {userData ? `${userData.name} & ${userData.partnerName}` : 'Our Big Day'}
+            </h1>
+          )}
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="text-white bg-white/20 rounded-full backdrop-blur-sm hover:bg-white/30 hover:text-white">
               <Bell />
@@ -70,7 +81,11 @@ export function Header() {
             </Button>
           </div>
         </div>
-        {userData?.weddingDate && <CountdownTimer targetDate={userData.weddingDate} />}
+        {loading ? (
+          <Skeleton className="h-24 w-full rounded-xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm" />
+        ) : (
+          userData?.weddingDate && <CountdownTimer targetDate={userData.weddingDate} />
+        )}
       </div>
     </div>
   );
