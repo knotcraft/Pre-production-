@@ -1,6 +1,7 @@
 
 'use client';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Dialog,
@@ -25,6 +26,12 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
@@ -33,7 +40,7 @@ import { useUser, useFirebase } from '@/firebase';
 import { ref, onValue, set, push, remove, update } from 'firebase/database';
 import { useToast } from '@/hooks/use-toast';
 import type { Guest } from '@/lib/types';
-import { Loader2, Upload, Download } from 'lucide-react';
+import { Loader2, Upload, Download, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -47,9 +54,7 @@ export default function GuestsPage() {
     const [isGuestDialogOpen, setIsGuestDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     
-    // Use separate states for dialogs to prevent conflicts
-    const [editingGuest, setEditingGuest] = useState<Guest | null>(null);
-    const [deletingGuest, setDeletingGuest] = useState<Guest | null>(null);
+    const [activeGuest, setActiveGuest] = useState<Guest | null>(null);
 
     const [formState, setFormState] = useState<Partial<Guest>>({
         name: '', side: 'bride', status: 'pending', group: '', email: '', phone: '', notes: '', diet: 'none'
@@ -85,18 +90,19 @@ export default function GuestsPage() {
     }, [user, database]);
     
     const { filteredGuests, summary } = useMemo(() => {
-        const guestsToShow = guests.filter(guest => {
-            if (sideFilter === 'all') return true;
-            return guest.side === sideFilter || guest.side === 'both';
-        });
+        let baseGuests = guests;
+
+        if (sideFilter !== 'all') {
+            baseGuests = guests.filter(guest => guest.side === sideFilter || guest.side === 'both');
+        }
 
         const summaryData = {
-            total: guestsToShow.length,
-            confirmed: guestsToShow.filter(g => g.status === 'confirmed').length,
-            pending: guestsToShow.filter(g => g.status === 'pending').length,
+            total: baseGuests.length,
+            confirmed: baseGuests.filter(g => g.status === 'confirmed').length,
+            pending: baseGuests.filter(g => g.status === 'pending').length,
         };
 
-        let displayGuests = guestsToShow;
+        let displayGuests = baseGuests;
 
         if (statusFilter !== 'all') {
             displayGuests = displayGuests.filter(g => g.status === statusFilter);
@@ -114,23 +120,23 @@ export default function GuestsPage() {
 
 
     const openGuestDialog = (guest: Guest | null) => {
-        setEditingGuest(guest);
+        setActiveGuest(guest);
         setFormState(guest || { name: '', side: 'bride', status: 'pending', group: '', email: '', phone: '', notes: '', diet: 'none' });
         setIsGuestDialogOpen(true);
     };
-    
+
     const handleSaveGuest = async () => {
         if (!user || !database || !formState.name) {
             toast({ variant: 'destructive', title: 'Invalid input', description: 'Guest name is required.' });
             return;
         }
-
+    
         const guestData = { ...formState, notes: formState.notes || '', group: formState.group || '' };
         delete guestData.id;
-
+    
         try {
-            if (editingGuest?.id) {
-                const guestRef = ref(database, `users/${user.uid}/guests/${editingGuest.id}`);
+            if (activeGuest?.id) {
+                const guestRef = ref(database, `users/${user.uid}/guests/${activeGuest.id}`);
                 await update(guestRef, guestData);
                 toast({ variant: 'success', title: 'Success', description: 'Guest updated.' });
             } else {
@@ -140,27 +146,27 @@ export default function GuestsPage() {
                 toast({ variant: 'success', title: 'Success', description: 'Guest added.' });
             }
             setIsGuestDialogOpen(false);
-            setEditingGuest(null);
-        } catch(e: any) {
+            setActiveGuest(null);
+        } catch (e: any) {
             toast({ variant: 'destructive', title: 'Error', description: e.message || 'Could not save guest.' });
         }
     };
     
     const openDeleteDialog = (guest: Guest) => {
-        setDeletingGuest(guest);
+        setActiveGuest(guest);
         setIsDeleteDialogOpen(true);
     };
 
     const handleConfirmDelete = async () => {
-        if (!user || !database || !deletingGuest) return;
+        if (!user || !database || !activeGuest) return;
         try {
-            await remove(ref(database, `users/${user.uid}/guests/${deletingGuest.id}`));
+            await remove(ref(database, `users/${user.uid}/guests/${activeGuest.id}`));
             toast({ variant: 'success', title: 'Success', description: 'Guest deleted.' });
         } catch (e: any) {
             toast({ variant: 'destructive', title: 'Error', description: e.message || 'Could not delete guest.' });
         } finally {
             setIsDeleteDialogOpen(false);
-            setDeletingGuest(null);
+            setActiveGuest(null);
         }
     };
     
@@ -342,70 +348,78 @@ export default function GuestsPage() {
                     </div>
                 </div>
                  {filteredGuests.length > 0 ? (
-                    filteredGuests.map(guest => (
-                        <details key={guest.id} className="group bg-white dark:bg-gray-900 rounded-2xl my-3 shadow-sm border border-gray-100 dark:border-gray-800 transition-all duration-300 open:ring-2 open:ring-primary/20">
-                            <summary className="flex items-center gap-4 p-4 cursor-pointer outline-none">
-                                <div className="bg-primary/10 text-primary font-black flex items-center justify-center aspect-square rounded-full h-14 w-14 border-2 border-primary/20 shadow-inner text-2xl">
-                                    {guest.name.charAt(0).toUpperCase()}
-                                </div>
-                                <div className="flex-1 flex flex-col min-w-0">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <h3 className="text-[#181113] dark:text-white text-base font-extrabold leading-tight truncate">{guest.name}</h3>
-                                        {guest.side !== 'both' && (
+                    <Accordion type="single" collapsible className="space-y-3">
+                        {filteredGuests.map(guest => (
+                            <AccordionItem value={guest.id} key={guest.id} className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 data-[state=open]:ring-2 data-[state=open]:ring-primary/20 overflow-hidden">
+                                <AccordionTrigger className="flex items-center gap-4 p-4 text-left w-full hover:no-underline">
+                                    <div className="relative h-14 w-14 aspect-square rounded-full border-2 border-primary/20 shadow-inner overflow-hidden flex-shrink-0">
+                                        <Image
+                                            src={`https://picsum.photos/seed/${guest.id.replace(/\W/g, '')}/100/100`}
+                                            alt={guest.name}
+                                            fill
+                                            className="object-cover"
+                                            data-ai-hint="person portrait"
+                                        />
+                                    </div>
+                                    <div className="flex-1 flex flex-col min-w-0">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <h3 className="text-[#181113] dark:text-white text-base font-extrabold leading-tight truncate">{guest.name}</h3>
+                                            {guest.side !== 'both' && (
+                                                <span className={cn(
+                                                    "flex-shrink-0 text-[9px] font-black px-2 py-0.5 rounded-md border uppercase tracking-tighter",
+                                                    guest.side === 'bride' ? 'bg-primary/10 text-primary border-primary/20' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 border-blue-100 dark:border-blue-800'
+                                                )}>{guest.side}</span>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-2">
                                             <span className={cn(
-                                                "flex-shrink-0 text-[9px] font-black px-2 py-0.5 rounded-md border uppercase tracking-tighter",
-                                                guest.side === 'bride' ? 'bg-primary/10 text-primary border-primary/20' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 border-blue-100 dark:border-blue-800'
-                                            )}>{guest.side}</span>
-                                        )}
+                                                "px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest",
+                                                guest.status === 'confirmed' && 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
+                                                guest.status === 'pending' && 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                                            )}>{guest.status}</span>
+                                            {guest.group && <span className="text-[#89616b] dark:text-gray-500 text-[10px] font-bold">• {guest.group}</span>}
+                                        </div>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className={cn(
-                                            "px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest",
-                                            guest.status === 'confirmed' && 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
-                                            guest.status === 'pending' && 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
-                                        )}>{guest.status}</span>
-                                        {guest.group && <span className="text-[#89616b] dark:text-gray-500 text-[10px] font-bold">• {guest.group}</span>}
+                                    <ChevronDown className="h-5 w-5 shrink-0 transition-transform duration-200 text-gray-400 data-[state=open]:rotate-180" />
+                                </AccordionTrigger>
+                                <AccordionContent className="px-4 pb-4 pt-2 border-t border-gray-50 dark:border-gray-800 space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {guest.email && <div className="space-y-1">
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Email</p>
+                                            <p className="text-sm font-bold text-[#181113] dark:text-white flex items-center gap-1 truncate">
+                                                <span className="material-symbols-outlined text-primary text-base">mail</span>
+                                                {guest.email}
+                                            </p>
+                                        </div>}
+                                        {guest.phone && <div className="space-y-1">
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Phone</p>
+                                            <p className="text-sm font-bold text-[#181113] dark:text-white flex items-center gap-1">
+                                                <span className="material-symbols-outlined text-primary text-base">call</span>
+                                                {guest.phone}
+                                            </p>
+                                        </div>}
                                     </div>
-                                </div>
-                                <span className="material-symbols-outlined text-gray-400 group-open:rotate-180 transition-transform">expand_more</span>
-                            </summary>
-                            <div className="px-4 pb-4 pt-2 border-t border-gray-50 dark:border-gray-800 space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    {guest.email && <div className="space-y-1">
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Email</p>
-                                        <p className="text-sm font-bold text-[#181113] dark:text-white flex items-center gap-1 truncate">
-                                            <span className="material-symbols-outlined text-primary text-base">mail</span>
-                                            {guest.email}
+                                    <div className={cn("space-y-1 p-3 rounded-xl", guest.notes ? 'bg-[#fef1f4] dark:bg-primary/5' : 'bg-gray-50 dark:bg-gray-800/50')}>
+                                        <p className={cn("text-[10px] font-black uppercase tracking-widest flex items-center gap-1", guest.notes ? "text-primary/60" : "text-gray-400")}>
+                                            <span className="material-symbols-outlined text-xs">notes</span>
+                                            Special Notes
                                         </p>
-                                    </div>}
-                                    {guest.phone && <div className="space-y-1">
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Phone</p>
-                                        <p className="text-sm font-bold text-[#181113] dark:text-white flex items-center gap-1">
-                                            <span className="material-symbols-outlined text-primary text-base">call</span>
-                                            {guest.phone}
-                                        </p>
-                                    </div>}
-                                </div>
-                                <div className={cn("space-y-1 p-3 rounded-xl", guest.notes ? 'bg-[#fef1f4] dark:bg-primary/5' : 'bg-gray-50 dark:bg-gray-800/50')}>
-                                    <p className={cn("text-[10px] font-black uppercase tracking-widest flex items-center gap-1", guest.notes ? "text-primary/60" : "text-gray-400")}>
-                                        <span className="material-symbols-outlined text-xs">notes</span>
-                                        Special Notes
-                                    </p>
-                                    <p className={cn("text-sm font-medium leading-relaxed", guest.notes ? "text-[#181113] dark:text-gray-300" : "text-gray-400 italic")}>{guest.notes || 'No notes added yet.'}</p>
-                                </div>
-                                <div className="flex gap-2 pt-2">
-                                    <button onClick={() => openGuestDialog(guest)} className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary/10 text-primary text-xs font-black uppercase tracking-widest border border-primary/20 active:bg-primary/20 transition-colors">
-                                        <span className="material-symbols-outlined text-lg">edit</span>
-                                        Edit
-                                    </button>
-                                    <button onClick={() => openDeleteDialog(guest)} className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-50 dark:bg-red-900/10 text-red-500 text-xs font-black uppercase tracking-widest border border-red-100 dark:border-red-900/20 active:bg-red-100 transition-colors">
-                                        <span className="material-symbols-outlined text-lg text-red-400">delete</span>
-                                        Delete
-                                    </button>
-                                </div>
-                            </div>
-                        </details>
-                    ))
+                                        <p className={cn("text-sm font-medium leading-relaxed", guest.notes ? "text-[#181113] dark:text-gray-300" : "text-gray-400 italic")}>{guest.notes || 'No notes added yet.'}</p>
+                                    </div>
+                                    <div className="flex gap-2 pt-2">
+                                        <button onClick={() => openGuestDialog(guest)} className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary/10 text-primary text-xs font-black uppercase tracking-widest border border-primary/20 active:bg-primary/20 transition-colors">
+                                            <span className="material-symbols-outlined text-lg">edit</span>
+                                            Edit
+                                        </button>
+                                        <button onClick={() => openDeleteDialog(guest)} className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-50 dark:bg-red-900/10 text-red-500 text-xs font-black uppercase tracking-widest border border-red-100 dark:border-red-900/20 active:bg-red-100 transition-colors">
+                                            <span className="material-symbols-outlined text-lg text-red-400">delete</span>
+                                            Delete
+                                        </button>
+                                    </div>
+                                </AccordionContent>
+                            </AccordionItem>
+                        ))}
+                    </Accordion>
                  ) : (
                     <div className="text-center p-10 flex flex-col items-center justify-center gap-4 text-muted-foreground h-full">
                          <span className="material-symbols-outlined text-6xl text-slate-400">groups</span>
@@ -420,10 +434,10 @@ export default function GuestsPage() {
                 </button>
             </div>
             
-             <Dialog open={isGuestDialogOpen} onOpenChange={setIsGuestDialogOpen}>
+             <Dialog open={isGuestDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) setActiveGuest(null); setIsGuestDialogOpen(isOpen); }}>
                 <DialogContent className="sm:max-w-[425px] grid-rows-[auto_minmax(0,1fr)_auto] p-0 max-h-[90dvh]">
                     <DialogHeader className="p-6 pb-0">
-                        <DialogTitle>{editingGuest ? 'Edit' : 'Add'} Guest</DialogTitle>
+                        <DialogTitle>{activeGuest ? 'Edit' : 'Add'} Guest</DialogTitle>
                     </DialogHeader>
                     <ScrollArea className="h-full">
                       <div className="grid gap-4 py-4 px-6">
@@ -478,12 +492,12 @@ export default function GuestsPage() {
                 </DialogContent>
             </Dialog>
 
-            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            <AlertDialog open={isDeleteDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) setActiveGuest(null); setIsDeleteDialogOpen(isOpen); }}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the guest "{deletingGuest?.name}".
+                            This action cannot be undone. This will permanently delete the guest "{activeGuest?.name}".
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
