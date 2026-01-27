@@ -43,21 +43,6 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { PieChart, Pie, Cell } from 'recharts';
-import type { ChartConfig } from "@/components/ui/chart";
-
-const chartConfig = {
-    confirmed: {
-      label: "Confirmed",
-      color: "hsl(var(--chart-2))", // A greenish color from the theme
-    },
-    pending: {
-      label: "Pending",
-      color: "hsl(var(--chart-4))", // A yellowish color from the theme
-    },
-} satisfies ChartConfig;
 
 export default function GuestsPage() {
     const { user } = useUser();
@@ -137,12 +122,6 @@ export default function GuestsPage() {
 
         return { filteredGuests: displayGuests, summary: summaryData };
     }, [guests, sideFilter, statusFilter, searchQuery]);
-
-    const chartData = useMemo(() => [
-        { name: "confirmed", value: summary.confirmed, fill: chartConfig.confirmed.color },
-        { name: "pending", value: summary.pending, fill: chartConfig.pending.color },
-    ].filter(d => d.value > 0), [summary]);
-
 
     const openGuestDialog = (guest: Guest | null) => {
         setActiveGuest(guest);
@@ -293,6 +272,8 @@ export default function GuestsPage() {
         </div>
       );
     }
+    
+    const confirmedPercentage = summary.total > 0 ? Math.round((summary.confirmed / summary.total) * 100) : 0;
 
     return (
         <div className="flex flex-col min-h-screen">
@@ -337,64 +318,47 @@ export default function GuestsPage() {
                     </div>
                 </div>
                 <div className="px-4 pb-4">
-                    <Card>
-                        <CardHeader className="pb-2">
-                            <CardTitle>Guest Summary</CardTitle>
-                            <CardDescription>
-                                <span className="font-bold text-lg text-primary">{summary.total}</span> guests invited from {sideFilter === 'all' ? 'all sides' : `${sideFilter}'s side`}
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="flex items-center justify-center p-0">
-                            {summary.total > 0 ? (
-                                <ChartContainer
-                                    config={chartConfig}
-                                    className="mx-auto aspect-square h-[180px]"
-                                >
-                                    <PieChart>
-                                        <ChartTooltip
-                                            cursor={false}
-                                            content={<ChartTooltipContent hideLabel nameKey="name" />}
+                    {summary.total > 0 ? (
+                        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-pink-500 to-rose-500 p-6 text-white shadow-lg dark:from-primary/80 dark:via-pink-500/80 dark:to-rose-500/80">
+                            <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10" />
+                            <div className="absolute -left-12 -bottom-12 h-32 w-32 rounded-full bg-white/10" />
+
+                            <div className="relative z-10">
+                                <div className="mb-2 flex items-center justify-between">
+                                    <p className="text-sm font-medium uppercase tracking-widest text-white/80">
+                                        Pending Responses
+                                    </p>
+                                </div>
+                                <h1 className="mb-6 text-4xl font-bold tracking-tight">
+                                    {summary.pending}
+                                </h1>
+
+                                <div>
+                                    <div className="h-2 w-full overflow-hidden rounded-full bg-white/30">
+                                        <div
+                                            className="h-full rounded-full bg-white transition-all duration-500"
+                                            style={{ width: `${confirmedPercentage}%` }}
                                         />
-                                        <Pie
-                                            data={chartData}
-                                            dataKey="value"
-                                            nameKey="name"
-                                            innerRadius={60}
-                                            strokeWidth={5}
-                                            stroke="hsl(var(--background))"
-                                        >
-                                            {chartData.map((entry) => (
-                                                <Cell key={entry.name} fill={entry.fill} />
-                                            ))}
-                                        </Pie>
-                                    </PieChart>
-                                </ChartContainer>
-                            ) : (
-                                <div className="h-[180px] flex flex-col items-center justify-center text-muted-foreground">
-                                    <span className="material-symbols-outlined text-5xl">sentiment_dissatisfied</span>
-                                    <p className="mt-2 text-sm font-medium">No guests to show</p>
-                                </div>
-                            )}
-                        </CardContent>
-                        {summary.total > 0 && (
-                            <CardFooter className="flex-col gap-2 text-sm pt-4">
-                                <div className="w-full flex items-center justify-between p-2 rounded-lg bg-green-50 dark:bg-green-900/20">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: chartConfig.confirmed.color }}/>
-                                        <p className="font-semibold text-green-700 dark:text-green-300">Confirmed</p>
                                     </div>
-                                    <p className="font-bold text-green-700 dark:text-green-300">{summary.confirmed} <span className="font-normal text-xs">({Math.round((summary.confirmed / summary.total) * 100)}%)</span></p>
-                                </div>
-                                <div className="w-full flex items-center justify-between p-2 rounded-lg bg-amber-50 dark:bg-yellow-900/20">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: chartConfig.pending.color }}/>
-                                        <p className="font-semibold text-amber-700 dark:text-yellow-300">Pending</p>
+                                    <div className="mt-2 flex justify-between text-xs font-semibold text-white/90">
+                                        <span>Confirmed: {summary.confirmed}</span>
+                                        <span>Total: {summary.total}</span>
                                     </div>
-                                    <p className="font-bold text-amber-700 dark:text-yellow-300">{summary.pending} <span className="font-normal text-xs">({Math.round((summary.pending / summary.total) * 100)}%)</span></p>
                                 </div>
-                            </CardFooter>
-                        )}
-                    </Card>
+                            </div>
+                        </div>
+                    ) : (
+                         <div className="rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-8 text-center flex flex-col items-center">
+                            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-800 mb-4">
+                                <span className="material-symbols-outlined text-4xl text-slate-500">group_add</span>
+                            </div>
+                            <h3 className="text-xl font-bold mb-2">Build Your Guest List</h3>
+                            <p className="text-sm text-muted-foreground mb-6 max-w-xs">Add your first guest to start tracking RSVPs and managing your event.</p>
+                            <Button size="lg" onClick={() => openGuestDialog(null)}>
+                                <span className="material-symbols-outlined mr-2 h-5 w-5">add</span> Add First Guest
+                            </Button>
+                        </div>
+                    )}
                 </div>
             </header>
             <main className="flex-1 flex flex-col bg-slate-50 dark:bg-background-dark/40">
