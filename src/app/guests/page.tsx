@@ -419,7 +419,18 @@ export default function GuestsPage() {
                 </div>
                 <div className="px-4 pb-4 min-h-[192px]">
                     <div className={cn("flex flex-col justify-center min-h-[176px]")}>
-                        {guests.length > 0 ? (
+                        {(guests.length === 0 && !loading) ? (
+                            <div className="w-full rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-8 text-center flex flex-col items-center justify-center min-h-[176px]">
+                                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-800 mb-4">
+                                    <span className="material-symbols-outlined text-4xl text-slate-500">group_add</span>
+                                </div>
+                                <h3 className="text-xl font-bold mb-2">Build Your Guest List</h3>
+                                <p className="text-sm text-muted-foreground mb-6 max-w-xs">Add your first guest to start tracking RSVPs and managing your event.</p>
+                                <Button size="lg" onClick={() => openGuestDialog(null)}>
+                                    <span className="material-symbols-outlined mr-2 h-5 w-5">add</span> Add First Guest
+                                </Button>
+                            </div>
+                        ) : (
                             <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-pink-500 to-rose-500 p-6 text-white shadow-lg dark:from-primary/80 dark:via-pink-500/80 dark:to-rose-500/80">
                                 <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10" />
                                 <div className="absolute -left-12 -bottom-12 h-32 w-32 rounded-full bg-white/10" />
@@ -447,17 +458,6 @@ export default function GuestsPage() {
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        ) : (
-                            <div className="w-full rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-8 text-center flex flex-col items-center justify-center min-h-[176px]">
-                                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-800 mb-4">
-                                    <span className="material-symbols-outlined text-4xl text-slate-500">group_add</span>
-                                </div>
-                                <h3 className="text-xl font-bold mb-2">Build Your Guest List</h3>
-                                <p className="text-sm text-muted-foreground mb-6 max-w-xs">Add your first guest to start tracking RSVPs and managing your event.</p>
-                                <Button size="lg" onClick={() => openGuestDialog(null)}>
-                                    <span className="material-symbols-outlined mr-2 h-5 w-5">add</span> Add First Guest
-                                </Button>
                             </div>
                         )}
                     </div>
