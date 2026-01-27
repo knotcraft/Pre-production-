@@ -61,9 +61,9 @@ export default function ForgotPasswordPage() {
         <div className="flex min-h-screen w-full flex-col items-center bg-white text-text-dark font-sans antialiased">
             <div className="w-full pt-8 px-6">
                 <div className="flex justify-center items-center max-w-[400px] mx-auto h-10">
-                    <div className="text-primary font-extrabold text-xl tracking-tight">
-                        <span className="material-symbols-outlined align-middle mr-1">favorite</span>
-                        WEDDING
+                    <div className="flex items-center justify-center gap-2 text-primary font-extrabold text-2xl tracking-tight">
+                        <span className="material-symbols-outlined text-3xl">favorite</span>
+                        <span>Forever Bloom</span>
                     </div>
                 </div>
             </div>
