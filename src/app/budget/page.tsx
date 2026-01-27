@@ -306,7 +306,7 @@ export default function BudgetPage() {
       <main className="pb-24">
         <div className="p-4 min-h-[218px]">
             {!hasBudget ? (
-                <div className="rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-8 text-center flex flex-col items-center">
+                <div className="rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-8 text-center flex flex-col items-center min-h-[218px] justify-center">
                     <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-800 mb-4">
                         <Wallet className="h-8 w-8 text-slate-500" />
                     </div>
@@ -565,7 +565,7 @@ export default function BudgetPage() {
       </AlertDialog>
       
       {hasBudget && (
-        <div className="fixed bottom-28 right-6 z-40">
+        <div className="fixed bottom-32 right-6 z-40">
             <Button onClick={() => openCategoryDialog(null)} className="w-14 h-14 rounded-full shadow-lg shadow-primary/30 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform">
             <span className="material-symbols-outlined text-3xl">add</span>
             </Button>

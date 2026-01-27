@@ -418,7 +418,7 @@ export default function GuestsPage() {
                                 </div>
                             </div>
                         ) : (
-                            <div className="w-full rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-8 text-center flex flex-col items-center justify-center">
+                            <div className="w-full rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-8 text-center flex flex-col items-center justify-center min-h-[176px]">
                                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-800 mb-4">
                                     <span className="material-symbols-outlined text-4xl text-slate-500">group_add</span>
                                 </div>
@@ -538,7 +538,7 @@ export default function GuestsPage() {
                     ) : null}
                 </div>
             </main>
-            <div className="fixed bottom-28 right-6 z-40">
+            <div className="fixed bottom-32 right-6 z-40">
                 <Button onClick={() => openGuestDialog(null)} className="w-14 h-14 rounded-full shadow-lg shadow-primary/30 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform">
                     <span className="material-symbols-outlined text-3xl">add</span>
                 </Button>
