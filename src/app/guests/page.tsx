@@ -39,7 +39,7 @@ import { useUser, useFirebase } from '@/firebase';
 import { ref, onValue, set, push, remove, update } from 'firebase/database';
 import { useToast } from '@/hooks/use-toast';
 import type { Guest } from '@/lib/types';
-import { Upload, Download, ChevronDown } from 'lucide-react';
+import { Upload, Download, ChevronDown, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -376,7 +376,7 @@ export default function GuestsPage() {
             <header className="sticky top-0 z-20 flex flex-col bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800">
                 <div className="flex items-center p-4 justify-between">
                     <Link href="/" className="text-foreground flex size-10 shrink-0 items-center -ml-2 rounded-full hover:bg-secondary">
-                        <span className="material-symbols-outlined text-2xl font-bold">arrow_back_ios_new</span>
+                        <span className="material-symbols-outlined text-2xl">arrow_back_ios_new</span>
                     </Link>
                     <h2 className="text-foreground text-xl font-extrabold leading-tight tracking-tight flex-1 text-center">Guest List</h2>
                     <div className="flex w-10 items-center justify-end">
@@ -411,15 +411,15 @@ export default function GuestsPage() {
                     </div>
                 </div>
                 <div className="px-4 pb-4">
-                    <div className="flex p-1 bg-secondary dark:bg-slate-900 rounded-2xl">
-                        <button onClick={() => setSideFilter('all')} className={cn("flex-1 py-2.5 text-sm font-bold rounded-xl transition-all", sideFilter === 'all' ? 'bg-background text-primary shadow-sm ring-1 ring-black/5' : 'text-muted-foreground')}>All Sides</button>
-                        <button onClick={() => setSideFilter('bride')} className={cn("flex-1 py-2.5 text-sm font-bold rounded-xl transition-all", sideFilter === 'bride' ? 'bg-background text-primary shadow-sm ring-1 ring-black/5' : 'text-muted-foreground')}>Bride's</button>
-                        <button onClick={() => setSideFilter('groom')} className={cn("flex-1 py-2.5 text-sm font-bold rounded-xl transition-all", sideFilter === 'groom' ? 'bg-background text-primary shadow-sm ring-1 ring-black/5' : 'text-muted-foreground')}>Groom's</button>
+                    <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-full">
+                        <button onClick={() => setSideFilter('all')} className={cn("flex-1 py-2 text-sm font-bold rounded-full transition-all", sideFilter === 'all' ? 'bg-white dark:bg-slate-700 text-primary shadow-sm' : 'text-slate-500')}>All Sides</button>
+                        <button onClick={() => setSideFilter('bride')} className={cn("flex-1 py-2 text-sm font-bold rounded-full transition-all", sideFilter === 'bride' ? 'bg-white dark:bg-slate-700 text-primary shadow-sm' : 'text-slate-500')}>Bride's</button>
+                        <button onClick={() => setSideFilter('groom')} className={cn("flex-1 py-2 text-sm font-bold rounded-full transition-all", sideFilter === 'groom' ? 'bg-white dark:bg-slate-700 text-primary shadow-sm' : 'text-slate-500')}>Groom's</button>
                     </div>
                 </div>
                 <div className="px-4 pb-4 min-h-[192px]">
                     <div className={cn("flex flex-col justify-center min-h-[176px]")}>
-                        {(guests.length === 0 && !loading) ? (
+                        {guests.length === 0 ? (
                             <div className="w-full rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-8 text-center flex flex-col items-center justify-center min-h-[176px]">
                                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-800 mb-4">
                                     <span className="material-symbols-outlined text-4xl text-slate-500">group_add</span>
@@ -427,7 +427,7 @@ export default function GuestsPage() {
                                 <h3 className="text-xl font-bold mb-2">Build Your Guest List</h3>
                                 <p className="text-sm text-muted-foreground mb-6 max-w-xs">Add your first guest to start tracking RSVPs and managing your event.</p>
                                 <Button size="lg" onClick={() => openGuestDialog(null)}>
-                                    <span className="material-symbols-outlined mr-2 h-5 w-5">add</span> Add First Guest
+                                    <Plus className="mr-2 h-5 w-5" /> Add First Guest
                                 </Button>
                             </div>
                         ) : (
@@ -473,14 +473,14 @@ export default function GuestsPage() {
                     </div>
                 </div>
                 <div className="flex gap-2 px-4 pb-4 overflow-x-auto no-scrollbar">
-                    <button onClick={() => setStatusFilter('all')} className={cn("flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full px-6", statusFilter === 'all' ? 'bg-primary text-white shadow-md shadow-primary/20' : 'bg-card border')}>
-                        <p className={cn("text-sm font-bold", statusFilter !== 'all' && "text-foreground")}>All Guests</p>
+                    <button onClick={() => setStatusFilter('all')} className={cn("flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full px-6 text-sm font-bold", statusFilter === 'all' ? 'bg-primary text-white shadow-md shadow-primary/20' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300')}>
+                        All Guests
                     </button>
-                    <button onClick={() => setStatusFilter('confirmed')} className={cn("flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full px-6", statusFilter === 'confirmed' ? 'bg-primary text-white shadow-md shadow-primary/20' : 'bg-card border')}>
-                        <p className={cn("text-sm font-bold", statusFilter !== 'confirmed' && "text-foreground")}>Confirmed</p>
+                    <button onClick={() => setStatusFilter('confirmed')} className={cn("flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full px-6 text-sm font-bold", statusFilter === 'confirmed' ? 'bg-primary text-white shadow-md shadow-primary/20' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300')}>
+                        Confirmed
                     </button>
-                    <button onClick={() => setStatusFilter('pending')} className={cn("flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full px-6", statusFilter === 'pending' ? 'bg-primary text-white shadow-md shadow-primary/20' : 'bg-card border')}>
-                        <p className={cn("text-sm font-bold", statusFilter !== 'pending' && "text-foreground")}>Pending</p>
+                    <button onClick={() => setStatusFilter('pending')} className={cn("flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full px-6 text-sm font-bold", statusFilter === 'pending' ? 'bg-primary text-white shadow-md shadow-primary/20' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300')}>
+                        Pending
                     </button>
                 </div>
                 <div className="flex-1 overflow-y-auto px-4 pb-24">
@@ -508,8 +508,8 @@ export default function GuestsPage() {
                                                 <h3 className="text-foreground text-base font-extrabold leading-tight truncate">{guest.name}</h3>
                                                 {guest.side !== 'both' && (
                                                     <span className={cn(
-                                                        "flex-shrink-0 text-[9px] font-black px-2 py-0.5 rounded-md border uppercase tracking-tighter",
-                                                        guest.side === 'bride' ? 'bg-primary/10 text-primary border-primary/20' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-500 border-blue-200 dark:border-blue-800'
+                                                        "flex-shrink-0 text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-tighter",
+                                                        guest.side === 'bride' ? 'bg-primary text-primary-foreground' : 'bg-blue-500 text-white'
                                                     )}>{guest.side}</span>
                                                 )}
                                             </div>
@@ -587,7 +587,7 @@ export default function GuestsPage() {
             </main>
             <div className="fixed bottom-24 right-6 z-40">
                 <Button onClick={() => openGuestDialog(null)} className="w-14 h-14 rounded-full shadow-lg shadow-primary/30 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform">
-                    <span className="material-symbols-outlined text-3xl">add</span>
+                    <Plus className="h-8 w-8" />
                 </Button>
             </div>
             
