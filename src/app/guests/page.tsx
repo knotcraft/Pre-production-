@@ -166,7 +166,7 @@ export default function GuestsPage() {
             guestData.diet = 'none';
         } else {
             // Clear family-specific fields
-            guestData.memberCount = undefined;
+            delete guestData.memberCount;
         }
 
         delete guestData.id;
@@ -174,7 +174,7 @@ export default function GuestsPage() {
         try {
             if (activeGuest?.id) {
                 const guestRef = ref(database, `users/${user.uid}/guests/${activeGuest.id}`);
-                await update(guestRef, guestData as any);
+                await set(guestRef, guestData);
                 toast({ variant: 'success', title: 'Success', description: 'Guest updated.' });
             } else {
                 const guestsRef = ref(database, `users/${user.uid}/guests`);
@@ -333,46 +333,10 @@ export default function GuestsPage() {
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
-    if (loading) {
-      return (
-        <div className="flex flex-col min-h-screen animate-fade-in">
-            <header className="sticky top-0 z-20 flex flex-col bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800">
-                <div className="flex items-center p-4 justify-between">
-                    <Skeleton className="h-10 w-10 rounded-full" />
-                    <Skeleton className="h-7 w-32" />
-                    <Skeleton className="h-10 w-10" />
-                </div>
-                <div className="px-4 pb-4">
-                  <Skeleton className="h-14 w-full rounded-2xl" />
-                </div>
-                <div className="px-4 pb-4 min-h-[192px]">
-                  <Skeleton className="h-44 w-full rounded-2xl" />
-                </div>
-            </header>
-            <main className="flex-1 flex flex-col bg-slate-50 dark:bg-background-dark/40">
-                <div className="px-4 py-4">
-                    <Skeleton className="h-12 w-full rounded-2xl" />
-                </div>
-                <div className="flex gap-2 px-4 pb-4">
-                    <Skeleton className="h-10 w-28 rounded-full" />
-                    <Skeleton className="h-10 w-28 rounded-full" />
-                    <Skeleton className="h-10 w-28 rounded-full" />
-                </div>
-                <div className="flex-1 overflow-y-auto px-4 pb-24 space-y-3">
-                    <Skeleton className="h-24 w-full rounded-2xl" />
-                    <Skeleton className="h-24 w-full rounded-2xl" />
-                    <Skeleton className="h-24 w-full rounded-2xl" />
-                    <Skeleton className="h-24 w-full rounded-2xl" />
-                </div>
-            </main>
-        </div>
-      );
-    }
-    
     const confirmedPercentage = summary.total > 0 ? Math.round((summary.confirmed / summary.total) * 100) : 0;
 
     return (
-        <div className="flex flex-col min-h-screen">
+        <div className="flex flex-col min-h-screen animate-fade-in">
             <header className="sticky top-0 z-20 flex flex-col bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800">
                 <div className="flex items-center p-4 justify-between">
                     <Link href="/" className="text-foreground flex size-10 shrink-0 items-center -ml-2 rounded-full hover:bg-secondary">
@@ -419,7 +383,9 @@ export default function GuestsPage() {
                 </div>
                 <div className="px-4 pb-4 min-h-[192px]">
                     <div className={cn("flex flex-col justify-center min-h-[176px]")}>
-                        {guests.length === 0 ? (
+                        {loading ? (
+                            <Skeleton className="h-44 w-full rounded-2xl" />
+                        ) : guests.length === 0 ? (
                             <div className="w-full rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-8 text-center flex flex-col items-center justify-center min-h-[176px]">
                                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-800 mb-4">
                                     <span className="material-symbols-outlined text-4xl text-slate-500">group_add</span>
@@ -464,6 +430,21 @@ export default function GuestsPage() {
                 </div>
             </header>
             <main className="flex-1 flex flex-col bg-slate-50 dark:bg-background-dark/40">
+              {loading ? (
+                 <div className="flex-1 overflow-y-auto px-4 pb-24 space-y-3 pt-4">
+                    <Skeleton className="h-12 w-full rounded-2xl" />
+                    <div className="flex gap-2 pb-2">
+                        <Skeleton className="h-10 w-28 rounded-full" />
+                        <Skeleton className="h-10 w-28 rounded-full" />
+                        <Skeleton className="h-10 w-28 rounded-full" />
+                    </div>
+                    <Skeleton className="h-24 w-full rounded-2xl" />
+                    <Skeleton className="h-24 w-full rounded-2xl" />
+                    <Skeleton className="h-24 w-full rounded-2xl" />
+                    <Skeleton className="h-24 w-full rounded-2xl" />
+                </div>
+              ) : guests.length > 0 ? (
+                <>
                 <div className="px-4 py-4">
                     <div className="flex w-full items-stretch rounded-2xl h-12 bg-card ring-1 ring-inset ring-border">
                         <div className="text-muted-foreground flex items-center justify-center pl-4">
@@ -491,7 +472,7 @@ export default function GuestsPage() {
                             <span className="material-symbols-outlined text-sm">unfold_more</span>
                         </div>
                     </div>
-                    {filteredGuests.length > 0 && guests.length > 0 ? (
+                    {filteredGuests.length > 0 ? (
                         <Accordion type="single" collapsible className="space-y-3">
                             {filteredGuests.map(guest => {
                                 const isFamily = guest.type === 'family';
@@ -576,16 +557,18 @@ export default function GuestsPage() {
                                 )
                             })}
                         </Accordion>
-                    ) : guests.length > 0 ? (
+                    ) : (
                         <div className="text-center p-10 flex flex-col items-center justify-center gap-4 text-muted-foreground h-full">
                             <span className="material-symbols-outlined text-6xl text-slate-400">search_off</span>
                             <h3 className="text-lg font-semibold text-foreground">No Guests Match</h3>
                             <p>Try a different search or filter.</p>
                         </div>
-                    ) : null}
+                    )}
                 </div>
+                </>
+              ) : null}
             </main>
-            <div className="fixed bottom-24 right-6 z-40">
+            <div className="fixed bottom-[5.5rem] right-6 z-40">
                 <Button onClick={() => openGuestDialog(null)} className="w-14 h-14 rounded-full shadow-lg shadow-primary/30 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform">
                     <Plus className="h-8 w-8" />
                 </Button>
@@ -692,3 +675,5 @@ export default function GuestsPage() {
         </div>
     );
 }
+
+    
