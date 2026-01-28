@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -11,11 +12,12 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Loader2, LogOut, Trash2, Upload } from 'lucide-react';
+import { Loader2, Trash2, Upload, LogOut, User, Image as ImageIcon, Sparkles, AlertTriangle } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Separator } from '@/components/ui/separator';
 
 export default function SettingsPage() {
   const { user, loading: userLoading } = useUser();
@@ -43,7 +45,7 @@ export default function SettingsPage() {
         if (snapshot.exists()) {
           const data = snapshot.val();
           setFormData({
-            name: data.name || '',
+            name: data.name || user.displayName || '',
             partnerName: data.partnerName || '',
             weddingDate: data.weddingDate || '',
             heroImage: data.heroImage || '',
@@ -203,39 +205,56 @@ export default function SettingsPage() {
 
   if (loading || userLoading) {
     return (
-      <div className="p-4 pt-8 animate-fade-in">
-        <header className="flex flex-col items-center justify-center mb-8">
-            <Skeleton className="h-8 w-48" />
-            <Skeleton className="h-4 w-64 mt-3" />
+      <div className="p-4 pt-8 animate-fade-in space-y-8">
+        <header className="flex items-center justify-between">
+          <Skeleton className="h-10 w-10 rounded-full" />
+          <Skeleton className="h-6 w-32" />
+          <div className="w-10" />
         </header>
-        <div className="space-y-6">
-            <Skeleton className="h-64 w-full rounded-xl" />
-            <Skeleton className="h-32 w-full rounded-xl" />
+        <div className="flex flex-col items-center pt-4 pb-4">
+          <Skeleton className="w-24 h-24 rounded-full mb-4" />
+          <Skeleton className="h-8 w-40 mb-2" />
+          <Skeleton className="h-4 w-48" />
+        </div>
+        <div className="space-y-6 px-2">
+            <Skeleton className="h-24 w-full rounded-xl" />
             <Skeleton className="h-48 w-full rounded-xl" />
+            <Skeleton className="h-32 w-full rounded-xl" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-4 pt-8 animate-fade-in">
-       <header className="flex items-center justify-between mb-8">
+    <div className="animate-fade-in pb-12">
+       <header className="flex items-center justify-between p-4">
           <Link href="/" className="text-foreground flex size-10 shrink-0 items-center justify-center -ml-2 rounded-full hover:bg-secondary">
             <span className="material-symbols-outlined text-2xl font-bold">arrow_back_ios_new</span>
           </Link>
-          <h1 className="text-xl font-bold text-center flex-1">Settings</h1>
+          <h1 className="text-lg font-bold text-center flex-1">Settings</h1>
            <div className="w-10" />
       </header>
 
-      <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Profile Details</CardTitle>
-            <CardDescription>
-              Manage your and your partner's names and the wedding date.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+      <div className="flex flex-col items-center pt-4 pb-8 border-b">
+        <Avatar className="w-24 h-24 mb-4 border-4 border-primary/20">
+            <AvatarImage src={user?.photoURL || ''} alt={formData.name} />
+            <AvatarFallback className="bg-primary/10 text-primary">
+                <User className="h-10 w-10" />
+            </AvatarFallback>
+        </Avatar>
+        <h2 className="text-2xl font-bold">{formData.name}</h2>
+        <p className="text-muted-foreground">{user?.email}</p>
+      </div>
+
+      <div className="p-4 space-y-8">
+        
+        {/* Wedding Details Section */}
+        <div className="space-y-3">
+          <h3 className="font-bold px-2 flex items-center gap-2 text-foreground">
+            <Sparkles className="text-primary h-5 w-5" />
+            Wedding Details
+          </h3>
+          <div className="space-y-4 rounded-xl border bg-card p-4">
             <div className="space-y-2">
               <Label htmlFor="name">Your Name</Label>
               <Input id="name" value={formData.name} onChange={handleInputChange} />
@@ -248,23 +267,21 @@ export default function SettingsPage() {
               <Label htmlFor="weddingDate">Wedding Date</Label>
               <Input id="weddingDate" type="date" value={formData.weddingDate} onChange={handleInputChange} />
             </div>
-          </CardContent>
-          <CardFooter>
-            <Button onClick={handleSaveChanges} disabled={saving}>
-              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save Changes
+            <Button onClick={handleSaveChanges} disabled={saving} className="w-full">
+              {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Save Details'}
             </Button>
-          </CardFooter>
-        </Card>
-        
-        <Card>
-            <CardHeader>
-                <CardTitle>Dashboard Image</CardTitle>
-                <CardDescription>
-                    Change the hero image on your main dashboard. This will be resized and compressed.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          </div>
+        </div>
+
+        {/* Appearance Section */}
+        <div className="space-y-3">
+            <h3 className="font-bold px-2 flex items-center gap-2 text-foreground">
+                <ImageIcon className="text-primary h-5 w-5" />
+                Appearance
+            </h3>
+            <div className="space-y-4 rounded-xl border bg-card p-4">
+                 <Label>Dashboard Image</Label>
+                 <p className="text-sm text-muted-foreground -mt-2">Change the hero image on your main dashboard.</p>
                 <div className="relative aspect-video w-full overflow-hidden rounded-lg border">
                     {currentImageSrc && (
                         <Image
@@ -299,42 +316,48 @@ export default function SettingsPage() {
                 ) : (
                     <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="w-full" disabled={isProcessingImage}>
                         <Upload className="mr-2 h-4 w-4" />
-                        Choose Image...
+                        Choose Image
                     </Button>
                 )}
-            </CardContent>
-        </Card>
+            </div>
+        </div>
 
-        <Card>
-            <CardHeader>
-                <CardTitle>Account</CardTitle>
-                <CardDescription>Manage your account settings.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                 <Button variant="outline" onClick={handleSignOut}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sign Out
-                </Button>
-            </CardContent>
-        </Card>
-
-        <Card className="border-destructive/50 bg-destructive/5">
-          <CardHeader>
-            <CardTitle className="text-destructive">Danger Zone</CardTitle>
-            <CardDescription className="text-destructive/80">
-              These actions are permanent and cannot be undone.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button
-              variant="destructive"
-              onClick={() => setIsTasksAlertOpen(true)}
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete All Tasks
+        {/* Account Section */}
+         <div className="space-y-3">
+          <h3 className="font-bold px-2 flex items-center gap-2 text-foreground">
+            <User className="text-primary h-5 w-5" />
+            Account
+          </h3>
+          <div className="space-y-4 rounded-xl border bg-card p-4">
+              <Button variant="outline" onClick={handleSignOut} className="w-full">
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign Out
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
+
+        {/* Danger Zone Section */}
+        <div className="space-y-3 pt-4">
+            <h3 className="font-bold px-2 flex items-center gap-2 text-destructive">
+                <AlertTriangle className="h-5 w-5"/>
+                Danger Zone
+            </h3>
+            <div className="space-y-4 rounded-xl border border-destructive/50 bg-destructive/5 p-4">
+                <div>
+                  <p className="font-semibold">Delete All Tasks</p>
+                  <p className="text-sm text-destructive/80">This will permanently delete all task data. This action cannot be undone.</p>
+                </div>
+                <Button
+                  variant="destructive"
+                  onClick={() => setIsTasksAlertOpen(true)}
+                  className="w-full"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete All Tasks
+                </Button>
+            </div>
+        </div>
+
       </div>
 
       <AlertDialog open={isTasksAlertOpen} onOpenChange={setIsTasksAlertOpen}>
