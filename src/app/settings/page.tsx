@@ -12,12 +12,16 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Trash2, Upload, LogOut, User, Image as ImageIcon, Sparkles, AlertTriangle } from 'lucide-react';
+import { Loader2, Trash2, Upload, LogOut, User, Image as ImageIcon, Sparkles, AlertTriangle, Calendar as CalendarIcon } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
+import { format } from 'date-fns';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
 
 export default function SettingsPage() {
   const { user, loading: userLoading } = useUser();
@@ -264,8 +268,33 @@ export default function SettingsPage() {
               <Input id="partnerName" value={formData.partnerName} onChange={handleInputChange} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="weddingDate">Wedding Date</Label>
-              <Input id="weddingDate" type="date" value={formData.weddingDate} onChange={handleInputChange} />
+              <Label>Wedding Date</Label>
+               <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !formData.weddingDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.weddingDate ? format(new Date(formData.weddingDate + "T00:00:00"), "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={formData.weddingDate ? new Date(formData.weddingDate + "T00:00:00") : undefined}
+                    onSelect={(date) => {
+                        if (date) {
+                            setFormData((prev) => ({ ...prev, weddingDate: format(date, 'yyyy-MM-dd') }))
+                        }
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
             <Button onClick={handleSaveChanges} disabled={saving} className="w-full">
               {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Save Details'}
