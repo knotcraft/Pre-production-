@@ -589,6 +589,18 @@ export default function GuestsPage() {
                                 </RadioGroup>
                             </div>
 
+                            {(formState.type || 'individual') === 'individual' ? (
+                                <div className="space-y-2">
+                                    <Label htmlFor="name" className="text-sm font-extrabold text-foreground uppercase tracking-wider">Name</Label>
+                                    <Input id="name" value={formState.name || ''} onChange={(e) => handleFormChange('name', e.target.value)} />
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    <Label htmlFor="name" className="text-sm font-extrabold text-foreground uppercase tracking-wider">Family / House Name</Label>
+                                    <Input id="name" value={formState.name || ''} onChange={(e) => handleFormChange('name', e.target.value)} placeholder="e.g. The Smith Family" />
+                                </div>
+                            )}
+                            
                             <div className="space-y-2">
                                 <Label htmlFor="group" className="text-sm font-extrabold text-foreground uppercase tracking-wider">Group</Label>
                                 <Input id="group" value={formState.group || ''} onChange={(e) => handleFormChange('group', e.target.value)} placeholder="e.g. Family, Friends" />
@@ -596,10 +608,6 @@ export default function GuestsPage() {
 
                             {(formState.type || 'individual') === 'individual' ? (
                                 <>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="name" className="text-sm font-extrabold text-foreground uppercase tracking-wider">Name</Label>
-                                        <Input id="name" value={formState.name || ''} onChange={(e) => handleFormChange('name', e.target.value)} />
-                                    </div>
                                     <div className="space-y-2">
                                         <Label className="text-sm font-extrabold text-foreground uppercase tracking-wider">Dietary Preference</Label>
                                         <RadioGroup value={formState.diet || 'none'} onValueChange={(val) => handleFormChange('diet', val as 'none' | 'veg' | 'non-veg')} className="flex gap-4 pt-1">
@@ -619,10 +627,6 @@ export default function GuestsPage() {
                                 </>
                             ) : (
                                 <>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="name" className="text-sm font-extrabold text-foreground uppercase tracking-wider">Family / House Name</Label>
-                                        <Input id="name" value={formState.name || ''} onChange={(e) => handleFormChange('name', e.target.value)} placeholder="e.g. The Smith Family" />
-                                    </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="memberCount" className="text-sm font-extrabold text-foreground uppercase tracking-wider">Number of Guests</Label>
                                         <Input id="memberCount" type="number" value={formState.memberCount || ''} onChange={(e) => handleFormChange('memberCount', e.target.value)} placeholder="e.g. 4" />
