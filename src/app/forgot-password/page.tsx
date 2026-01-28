@@ -19,6 +19,7 @@ import { sendPasswordResetEmail } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { AppLogo } from '@/components/logo';
 
 const formSchema = z.object({
     email: z.string().email('Invalid email address.'),
@@ -61,10 +62,7 @@ export default function ForgotPasswordPage() {
         <div className="flex min-h-screen w-full flex-col items-center bg-white text-text-dark font-sans antialiased">
             <div className="w-full pt-8 px-6">
                 <div className="flex justify-center items-center max-w-[400px] mx-auto h-10">
-                    <div className="flex items-center justify-center gap-2 text-primary font-extrabold text-2xl tracking-tight">
-                        <span className="material-symbols-outlined text-3xl">favorite</span>
-                        <span>Forever Bloom</span>
-                    </div>
+                    <AppLogo />
                 </div>
             </div>
             <div className="w-full max-w-[400px] px-6 flex flex-col pb-8">
