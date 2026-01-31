@@ -20,7 +20,6 @@ export interface Category extends CategoryInDB {
 }
 
 export interface BudgetData {
-  total?: number;
   categories?: Record<string, CategoryInDB>;
 }
 

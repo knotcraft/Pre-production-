@@ -9,7 +9,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -38,7 +37,7 @@ import { Label } from '@/components/ui/label';
 import { useUser, useDatabase } from '@/firebase';
 import { ref, onValue, set, push, remove, update } from 'firebase/database';
 import { toast } from '@/hooks/use-toast';
-import type { BudgetData, Category, Expense } from '@/lib/types';
+import type { BudgetData, Category, Expense, CategoryInDB } from '@/lib/types';
 import { MoreVertical, Pencil, Plus, Trash2, ChevronDown, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
@@ -60,7 +59,6 @@ export default function BudgetPage() {
   const [budgetData, setBudgetData] = useState<BudgetData | null>(null);
 
   // Dialog states
-  const [isEditTotalBudgetOpen, setIsEditTotalBudgetOpen] = useState(false);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [isExpenseDialogOpen, setIsExpenseDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -70,7 +68,6 @@ export default function BudgetPage() {
   const [activeExpense, setActiveExpense] = useState<Expense | null>(null);
 
   // Form states
-  const [totalBudgetInput, setTotalBudgetInput] = useState('');
   const [categoryNameInput, setCategoryNameInput] = useState('');
   const [categoryAllocatedInput, setCategoryAllocatedInput] = useState('');
   const [categoryStyleIndex, setCategoryStyleIndex] = useState(0);
@@ -88,10 +85,6 @@ export default function BudgetPage() {
       const unsubscribe = onValue(budgetRef, (snapshot) => {
         const data = snapshot.val();
         setBudgetData(data);
-        setTotalBudgetInput(data?.total?.toString() || '');
-        if (data === null || !data.total) {
-            setIsEditTotalBudgetOpen(true);
-        }
         setLoading(false);
       });
 
@@ -101,11 +94,9 @@ export default function BudgetPage() {
     }
   }, [user, database]);
 
-  const { totalSpent, remainingBudget, categories } = useMemo(() => {
-    const total = budgetData?.total || 0;
-
+  const { totalAllocated, totalSpent, remainingBudget, categories } = useMemo(() => {
     if (!budgetData?.categories) {
-      return { totalSpent: 0, remainingBudget: total, categories: [] };
+      return { totalAllocated: 0, totalSpent: 0, remainingBudget: 0, categories: [] };
     }
 
     const cats = Object.entries(budgetData.categories).map(([id, cat]) => {
@@ -116,32 +107,17 @@ export default function BudgetPage() {
       );
       return {
         id,
-        ...cat,
+        ...(cat as CategoryInDB),
         spent,
         expenses: cat.expenses || {},
       };
     });
 
-    const totalSpent = cats.reduce((sum, cat) => sum + (cat.spent || 0), 0);
-    const remainingBudget = total - totalSpent;
-    return { totalSpent, remainingBudget, categories: cats };
+    const totalAllocated = cats.reduce((sum, cat) => sum + (cat.allocated || 0), 0);
+    const totalSpent = cats.reduce((sum, cat) => sum + cat.spent, 0);
+    const remainingBudget = totalAllocated - totalSpent;
+    return { totalAllocated, totalSpent, remainingBudget, categories: cats };
   }, [budgetData]);
-
-  const handleSetTotalBudget = async () => {
-    if (!user || !database) return;
-    const newTotal = parseFloat(totalBudgetInput);
-    if (isNaN(newTotal) || newTotal < 0) {
-      toast({ variant: 'destructive', title: 'Invalid amount', description: 'Please enter a valid budget amount.' });
-      return;
-    }
-    try {
-      await set(ref(database, `users/${user.uid}/budget/total`), newTotal);
-      toast({ variant: 'success', title: 'Success', description: 'Total budget updated.' });
-      setIsEditTotalBudgetOpen(false);
-    } catch (e) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not update total budget.' });
-    }
-  };
 
   const openCategoryDialog = (category: Category | null) => {
     setActiveCategory(category);
@@ -261,8 +237,7 @@ export default function BudgetPage() {
     return style || categoryStyles[0];
   }
 
-  const hasBudget = budgetData?.total && budgetData.total > 0;
-  const budgetPercentage = hasBudget ? (totalSpent / budgetData.total) * 100 : 0;
+  const budgetPercentage = totalAllocated > 0 ? (totalSpent / totalAllocated) * 100 : 0;
   
   if (loading) {
     return (
@@ -305,35 +280,16 @@ export default function BudgetPage() {
 
       <main className="pb-24">
         <div className="p-4 min-h-[218px]">
-            {!hasBudget ? (
+            {categories.length === 0 ? (
                 <div className="rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-8 text-center flex flex-col items-center min-h-[218px] justify-center">
                     <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-800 mb-4">
                         <Wallet className="h-8 w-8 text-slate-500" />
                     </div>
-                    <h3 className="text-xl font-bold mb-2">Set Your Wedding Budget</h3>
-                    <p className="text-sm text-muted-foreground mb-6 max-w-xs">To start tracking your expenses, you first need to set a total budget for your wedding.</p>
-                    
-                    <Dialog open={isEditTotalBudgetOpen} onOpenChange={setIsEditTotalBudgetOpen}>
-                        <DialogTrigger asChild>
-                        <Button size="lg">
-                            <Plus className="mr-2 h-5 w-5" /> Set Total Budget
-                        </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Set Total Budget</DialogTitle>
-                        </DialogHeader>
-                        <div className="grid gap-4 py-4">
-                            <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="total-budget" className="text-right">Amount</Label>
-                            <Input id="total-budget" type="number" value={totalBudgetInput} onChange={(e) => setTotalBudgetInput(e.target.value)} className="col-span-3" placeholder="e.g., 500000" />
-                            </div>
-                        </div>
-                        <DialogFooter>
-                            <Button onClick={handleSetTotalBudget}>Save</Button>
-                        </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
+                    <h3 className="text-xl font-bold mb-2">Create Your Wedding Budget</h3>
+                    <p className="text-sm text-muted-foreground mb-6 max-w-xs">To start tracking your expenses, add your first budget category.</p>
+                    <Button size="lg" onClick={() => openCategoryDialog(null)}>
+                        <Plus className="mr-2 h-5 w-5" /> Add First Category
+                    </Button>
                 </div>
             ) : (
                 <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-pink-500 to-rose-500 p-6 text-white shadow-lg dark:from-primary/80 dark:via-pink-500/80 dark:to-rose-500/80">
@@ -343,27 +299,6 @@ export default function BudgetPage() {
                     <div className="relative z-10">
                         <div className="mb-2 flex items-center justify-between">
                             <p className="text-sm font-medium uppercase tracking-widest text-white/80">Remaining Budget</p>
-                            <Dialog open={isEditTotalBudgetOpen} onOpenChange={setIsEditTotalBudgetOpen}>
-                                <DialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="-mr-2 rounded-full text-white/80 hover:bg-white/20 hover:text-white">
-                                    <Pencil className="h-5 w-5" />
-                                </Button>
-                                </DialogTrigger>
-                                <DialogContent>
-                                <DialogHeader>
-                                    <DialogTitle>{budgetData?.total ? 'Edit' : 'Set'} Total Budget</DialogTitle>
-                                </DialogHeader>
-                                <div className="grid gap-4 py-4">
-                                    <div className="grid grid-cols-4 items-center gap-4">
-                                    <Label htmlFor="total-budget" className="text-right">Amount</Label>
-                                    <Input id="total-budget" type="number" value={totalBudgetInput} onChange={(e) => setTotalBudgetInput(e.target.value)} className="col-span-3" placeholder="e.g., 500000" />
-                                    </div>
-                                </div>
-                                <DialogFooter>
-                                    <Button onClick={handleSetTotalBudget}>Save</Button>
-                                </DialogFooter>
-                                </DialogContent>
-                            </Dialog>
                         </div>
                         <h1 className="mb-6 text-4xl font-bold tracking-tight">
                             ₹{remainingBudget.toLocaleString('en-IN')}
@@ -378,11 +313,11 @@ export default function BudgetPage() {
                             </div>
                             <div className="mt-2 flex justify-between text-xs font-semibold text-white/90">
                                 <span>Spent: ₹{totalSpent.toLocaleString('en-IN')}</span>
-                                <span>Total: ₹{(budgetData?.total || 0).toLocaleString('en-IN')}</span>
+                                <span>Total: ₹{totalAllocated.toLocaleString('en-IN')}</span>
                             </div>
                             {budgetPercentage > 100 && (
                                 <p className="mt-2 text-right text-xs font-bold text-yellow-300">
-                                You've gone over budget by ₹{(totalSpent - (budgetData?.total || 0)).toLocaleString('en-IN')}!
+                                You've gone over budget by ₹{(totalSpent - totalAllocated).toLocaleString('en-IN')}!
                                 </p>
                             )}
                         </div>
@@ -390,25 +325,18 @@ export default function BudgetPage() {
                 </div>
             )}
         </div>
-        {hasBudget && (
+        {categories.length > 0 && (
             <>
                 <div className="px-4 flex items-center justify-between">
                     <h3 className="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight">Spending by Category</h3>
                 </div>
 
                 <div className="flex flex-col gap-2 p-4">
-                {categories.length === 0 ? (
-                    <div className="text-center p-10 text-slate-500 dark:text-slate-400 border-2 border-dashed rounded-xl min-h-[200px] flex flex-col justify-center items-center">
-                        <Wallet className="mx-auto h-12 w-12 text-slate-400 mb-4" />
-                        <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300">No categories yet</h3>
-                        <p className="mt-1">Click the '+' button below to add your first spending category.</p>
-                    </div>
-                ) : (
                     <Accordion type="single" collapsible className="w-full space-y-2" value={openAccordion} onValueChange={setOpenAccordion}>
                     {categories.map((cat) => {
                         const progress = cat.allocated > 0 ? (cat.spent / cat.allocated) * 100 : 0;
                         const style = getCategoryStyle(cat.icon);
-                        const expensesArray = cat.expenses ? Object.entries(cat.expenses).map(([id, ex]) => ({ id, ...ex })) : [];
+                        const expensesArray = cat.expenses ? Object.entries(cat.expenses).map(([id, ex]) => ({ id, ...(ex as Omit<Expense, 'id'>) })) : [];
 
                         return (
                         <AccordionItem value={cat.id} key={cat.id} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden data-[state=open]:border-primary/30 data-[state=open]:dark:border-primary/50 data-[state=open]:ring-1 data-[state=open]:ring-primary/10">
@@ -484,7 +412,6 @@ export default function BudgetPage() {
                         )
                     })}
                     </Accordion>
-                )}
                 </div>
             </>
         )}
@@ -564,13 +491,11 @@ export default function BudgetPage() {
         </AlertDialogContent>
       </AlertDialog>
       
-      {hasBudget && (
-        <div className="fixed bottom-24 right-6 z-40">
-            <Button onClick={() => openCategoryDialog(null)} className="w-14 h-14 rounded-full shadow-lg shadow-primary/30 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform">
-            <span className="material-symbols-outlined text-3xl">add</span>
-            </Button>
-        </div>
-      )}
+      <div className="fixed bottom-24 right-6 z-40">
+          <Button onClick={() => openCategoryDialog(null)} className="w-14 h-14 rounded-full shadow-lg shadow-primary/30 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform">
+          <span className="material-symbols-outlined text-3xl">add</span>
+          </Button>
+      </div>
     </div>
   );
 }
