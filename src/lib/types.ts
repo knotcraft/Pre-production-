@@ -50,3 +50,18 @@ export interface Task {
   owner?: string;
   shared?: boolean;
 }
+
+export interface NotificationSettings {
+  taskShared: boolean;
+  dueDateReminder: boolean;
+}
+
+export interface Notification {
+  id: string;
+  message: string;
+  link: string;
+  read: boolean;
+  createdAt: string; // ISO string
+  type: 'TASK_SHARED' | 'DUE_DATE_REMINDER';
+  relatedId: string; // e.g., task ID
+}

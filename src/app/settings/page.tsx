@@ -12,18 +12,18 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Trash2, Upload, LogOut, User, Image as ImageIcon, Sparkles, AlertTriangle, Calendar as CalendarIcon, Link as LinkIcon, Copy } from 'lucide-react';
+import { Loader2, Trash2, Upload, LogOut, User, Image as ImageIcon, Sparkles, AlertTriangle, Calendar as CalendarIcon, Link as LinkIcon, Copy, Bell } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from '@/components/ui/skeleton';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Separator } from '@/components/ui/separator';
-import { format } from 'date-fns';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { Switch } from '@/components/ui/switch';
 
 export default function SettingsPage() {
   const { user, loading: userLoading } = useUser();
@@ -36,6 +36,10 @@ export default function SettingsPage() {
     partnerName: '',
     weddingDate: '',
     heroImage: '',
+  });
+  const [notificationSettings, setNotificationSettings] = useState({
+    taskShared: true,
+    dueDateReminder: true,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -64,6 +68,9 @@ export default function SettingsPage() {
             weddingDate: data.weddingDate || '',
             heroImage: data.heroImage || '',
           });
+          if (data.notificationSettings) {
+            setNotificationSettings(data.notificationSettings);
+          }
           setLinkedPartner(data.linkedPartner || null);
         }
         setLoading(false);
@@ -87,11 +94,12 @@ export default function SettingsPage() {
         name: formData.name,
         partnerName: formData.partnerName,
         weddingDate: formData.weddingDate,
+        notificationSettings: notificationSettings,
       });
       toast({
         variant: 'success',
         title: 'Success!',
-        description: 'Your details have been updated.',
+        description: 'Your settings have been updated.',
       });
     } catch (error: any) {
       toast({
@@ -402,9 +410,6 @@ export default function SettingsPage() {
                 </PopoverContent>
               </Popover>
             </div>
-            <Button onClick={handleSaveChanges} disabled={saving} className="w-full">
-              {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Save Details'}
-            </Button>
           </div>
         </div>
 
@@ -456,6 +461,43 @@ export default function SettingsPage() {
                 )}
             </div>
         </div>
+        
+        {/* Notifications Section */}
+        <div className="space-y-3">
+          <h3 className="font-bold px-2 flex items-center gap-2 text-foreground">
+            <Bell className="text-primary h-5 w-5" />
+            Notifications
+          </h3>
+          <div className="rounded-xl border bg-card p-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="pr-4">
+                <Label htmlFor="taskSharedNotif" className="font-semibold">Task Updates</Label>
+                <p className="text-sm text-muted-foreground">When your partner adds or shares a task with you.</p>
+              </div>
+              <Switch
+                id="taskSharedNotif"
+                checked={notificationSettings.taskShared}
+                onCheckedChange={(checked) => setNotificationSettings(p => ({...p, taskShared: checked}))}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="pr-4">
+                <Label htmlFor="dueDateNotif" className="font-semibold">Due Date Reminders</Label>
+                <p className="text-sm text-muted-foreground">Get a reminder one day before a task is due.</p>
+              </div>
+              <Switch
+                id="dueDateNotif"
+                checked={notificationSettings.dueDateReminder}
+                onCheckedChange={(checked) => setNotificationSettings(p => ({...p, dueDateReminder: checked}))}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Save All Settings */}
+        <Button onClick={handleSaveChanges} disabled={saving} size="lg" className="w-full">
+            {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Save All Settings'}
+        </Button>
 
         {/* Partner Sync Section */}
         <div className="space-y-3">
@@ -592,5 +634,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
-    

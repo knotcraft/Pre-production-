@@ -6,8 +6,11 @@ import { usePathname, useRouter } from 'next/navigation';
 import { BottomNav } from '@/components/layout/bottom-nav';
 import { useState, useEffect } from 'react';
 import { useUser, useFirebase } from '@/firebase';
-import { ref, get } from 'firebase/database';
+import { ref, get, update, push } from 'firebase/database';
 import { Skeleton } from '@/components/ui/skeleton';
+import { isSameDay, isTomorrow, parseISO } from 'date-fns';
+import type { Task, Notification } from '@/lib/types';
+
 
 function AppLoadingSkeleton() {
   return (
@@ -49,8 +52,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [isCheckComplete, setIsCheckComplete] = useState(false);
 
   useEffect(() => {
-    if (userLoading) {
-      return; // 1. Wait for user to be loaded
+    if (userLoading || !database) {
+      return; 
     }
 
     const publicPages = ['/login', '/signup', '/forgot-password', '/verify-email'];
@@ -60,7 +63,6 @@ export function AppShell({ children }: { children: ReactNode }) {
       // USER IS LOGGED IN
       const isEmailPassword = user.providerData.some(p => p.providerId === 'password');
       
-      // 2. Handle email verification
       if (isEmailPassword && !user.emailVerified) {
         if (pathname !== '/verify-email') {
           router.push('/verify-email');
@@ -70,13 +72,11 @@ export function AppShell({ children }: { children: ReactNode }) {
         return;
       }
       
-      // At this point, user is verified or uses social login.
       if (isPublicPage) {
         router.push('/');
         return;
       }
 
-      // 3. Handle personalization
       const isPersonalizePage = pathname === '/personalize';
       const checkUserProfile = async () => {
         const userRef = ref(database, 'users/' + user.uid);
@@ -86,6 +86,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           if (isPersonalizePage) {
             router.push('/');
           } else {
+            checkDueDateNotifications();
             setIsCheckComplete(true);
           }
         } else {
@@ -96,6 +97,62 @@ export function AppShell({ children }: { children: ReactNode }) {
           }
         }
       };
+
+      const checkDueDateNotifications = async () => {
+        const settingsSnap = await get(ref(database, `users/${user.uid}/notificationSettings`));
+        const settings = settingsSnap.val();
+
+        if (settings?.dueDateReminder === false) return;
+
+        const lastCheck = localStorage.getItem('dueDateNotificationLastCheck');
+        const today = new Date().toISOString().split('T')[0];
+        if (lastCheck === today) return;
+
+        const tasksSnap = await get(ref(database, `users/${user.uid}/tasks`));
+        if (!tasksSnap.exists()) return;
+
+        const allTasks: Task[] = Object.entries(tasksSnap.val()).map(([id, task]) => ({ id, ...(task as any) }));
+        const tasksDueTomorrow = allTasks.filter(t => !t.completed && isTomorrow(parseISO(t.dueDate)));
+
+        if (tasksDueTomorrow.length === 0) {
+            localStorage.setItem('dueDateNotificationLastCheck', today);
+            return;
+        }
+
+        const notificationsSnap = await get(ref(database, `notifications/${user.uid}`));
+        const notifications: Notification[] = notificationsSnap.exists() ? Object.values(notificationsSnap.val()) : [];
+
+        const updates: { [key: string]: any } = {};
+
+        tasksDueTomorrow.forEach(task => {
+            const alreadyNotifiedToday = notifications.some(n => 
+                n.type === 'DUE_DATE_REMINDER' && 
+                n.relatedId === task.id &&
+                isSameDay(parseISO(n.createdAt), new Date())
+            );
+
+            if (!alreadyNotifiedToday) {
+                const newNotifKey = push(ref(database)).key;
+                if (newNotifKey) {
+                    updates[`/notifications/${user.uid}/${newNotifKey}`] = {
+                        message: `Task due tomorrow: "${task.title}"`,
+                        link: '/tasks',
+                        read: false,
+                        createdAt: new Date().toISOString(),
+                        type: 'DUE_DATE_REMINDER',
+                        relatedId: task.id,
+                    };
+                }
+            }
+        });
+
+        if (Object.keys(updates).length > 0) {
+            await update(ref(database), updates);
+        }
+
+        localStorage.setItem('dueDateNotificationLastCheck', today);
+      };
+
       checkUserProfile();
 
     } else {

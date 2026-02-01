@@ -140,7 +140,7 @@ export default function TasksPage() {
         let baseTasks = tasks;
         
         if (taskView === 'private') {
-            baseTasks = tasks.filter(task => !task.shared && task.owner === user?.uid);
+            baseTasks = tasks.filter(task => !task.shared);
         } else if (taskView === 'shared') {
             baseTasks = tasks.filter(task => task.shared);
         }
@@ -216,7 +216,7 @@ export default function TasksPage() {
             return;
         }
     
-        const taskData = {
+        const taskData: Omit<Task, 'id'> = {
             title: formState.title,
             dueDate: formState.dueDate,
             notes: formState.notes || '',
@@ -224,40 +224,54 @@ export default function TasksPage() {
             category: formState.category,
             priority: formState.priority,
             owner: formState.owner || user.uid,
-            shared: formState.shared || false,
+            shared: formState.shared,
         };
 
-        try {
-            const updates: { [key: string]: any } = {};
+        const isNewTask = !activeTask;
+        const taskId = isNewTask ? push(ref(database)).key : activeTask.id;
+        if (!taskId) throw new Error("Could not create task key");
 
-            if (activeTask) { // Editing existing task
-                const wasShared = activeTask.shared;
-                const isShared = taskData.shared;
-                
-                updates[`/users/${user.uid}/tasks/${activeTask.id}`] = taskData;
+        const updates: { [key: string]: any } = {};
 
-                if (linkedPartner) {
-                    if (wasShared && !isShared) { // Un-sharing
-                        updates[`/users/${linkedPartner.uid}/tasks/${activeTask.id}`] = null;
-                    } else if (!wasShared && isShared) { // Sharing for the first time
-                        updates[`/users/${linkedPartner.uid}/tasks/${activeTask.id}`] = taskData;
-                    } else if (wasShared && isShared) { // Updating a shared task
-                        updates[`/users/${linkedPartner.uid}/tasks/${activeTask.id}`] = taskData;
-                    }
-                }
-                toast({ variant: 'success', title: 'Success', description: 'Task updated.' });
-            } else { // Adding new task
-                const newTaskKey = push(ref(database, `users/${user.uid}/tasks`)).key;
-                if (!newTaskKey) throw new Error("Could not create task key");
-                
-                updates[`/users/${user.uid}/tasks/${newTaskKey}`] = taskData;
-                
-                if (taskData.shared && linkedPartner) {
-                    updates[`/users/${linkedPartner.uid}/tasks/${newTaskKey}`] = taskData;
-                }
-                toast({ variant: 'success', title: 'Success', description: 'Task added.' });
+        // Prepare task updates
+        updates[`/users/${user.uid}/tasks/${taskId}`] = taskData;
+        if (linkedPartner) {
+            if (taskData.shared) {
+                updates[`/users/${linkedPartner.uid}/tasks/${taskId}`] = taskData;
+            } else if (!isNewTask) { // If editing, explicitly un-share
+                updates[`/users/${linkedPartner.uid}/tasks/${taskId}`] = null;
             }
+        }
+
+        // Prepare notification updates
+        if (linkedPartner) {
+            const isNowShared = taskData.shared;
+            const wasShared = activeTask?.shared || false;
+
+            if (isNowShared && (!wasShared || isNewTask)) {
+                // Task is newly shared or is a new shared task
+                const partnerSettingsSnap = await get(ref(database, `users/${linkedPartner.uid}/notificationSettings`));
+                if (partnerSettingsSnap.val()?.taskShared !== false) { // Default to ON
+                    const newNotifKey = push(ref(database)).key;
+                    const message = isNewTask 
+                        ? `${user.displayName} added a shared task: "${taskData.title}"`
+                        : `${user.displayName} shared a task with you: "${taskData.title}"`;
+
+                    updates[`/notifications/${linkedPartner.uid}/${newNotifKey}`] = {
+                        message,
+                        link: '/tasks',
+                        read: false,
+                        createdAt: new Date().toISOString(),
+                        type: 'TASK_SHARED',
+                        relatedId: taskId,
+                    };
+                }
+            }
+        }
+        
+        try {
             await update(ref(database), updates);
+            toast({ variant: 'success', title: 'Success', description: isNewTask ? 'Task added.' : 'Task updated.'});
             setIsTaskDialogOpen(false);
             setActiveTask(null);
         } catch (e: any) {
@@ -443,7 +457,7 @@ export default function TasksPage() {
                               <div className={cn("flex flex-col flex-1", task.completed && "checked-task")}>
                                 <div className="flex items-center gap-1.5">
                                     <p className="text-[#181113] dark:text-white text-sm font-semibold">{task.title}</p>
-                                    {task.shared && linkedPartner && taskView === 'all' && (
+                                    {task.shared && (
                                         <Users className="h-3 w-3 text-primary" title="Shared Task"/>
                                     )}
                                 </div>
@@ -549,5 +563,3 @@ export default function TasksPage() {
         </div>
     );
 }
-
-    
