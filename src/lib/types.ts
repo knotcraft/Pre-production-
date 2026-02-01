@@ -1,4 +1,5 @@
 
+
 export interface Expense {
   id: string;
   description: string;
@@ -47,4 +48,5 @@ export interface Task {
   category: string;
   priority: 'High' | 'Medium' | 'Low';
   owner?: string;
+  shared?: boolean;
 }

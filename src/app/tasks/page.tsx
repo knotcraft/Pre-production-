@@ -55,6 +55,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { format, parseISO, isValid } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const taskCategories = [
   '12+ Months Out',
@@ -86,7 +87,7 @@ export default function TasksPage() {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [sortOption, setSortOption] = useState<SortOption>('dueDateAsc');
-    const [taskView, setTaskView] = useState<'all' | 'mine' | 'partner'>('all');
+    const [taskView, setTaskView] = useState<'all' | 'private' | 'shared'>('all');
     
     const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -100,6 +101,7 @@ export default function TasksPage() {
         completed: false,
         category: taskCategories[0],
         priority: 'Medium',
+        shared: true,
     });
 
     const [linkedPartner, setLinkedPartner] = useState<{name: string, uid: string} | null>(null);
@@ -136,12 +138,11 @@ export default function TasksPage() {
     
     const { groupedTasks, overallProgress } = useMemo(() => {
         let baseTasks = tasks;
-        if (user && linkedPartner && taskView !== 'all') {
-            if (taskView === 'mine') {
-                baseTasks = tasks.filter(task => task.owner === user.uid);
-            } else if (taskView === 'partner') {
-                baseTasks = tasks.filter(task => task.owner === linkedPartner.uid);
-            }
+        
+        if (taskView === 'private') {
+            baseTasks = tasks.filter(task => !task.shared && task.owner === user?.uid);
+        } else if (taskView === 'shared') {
+            baseTasks = tasks.filter(task => task.shared);
         }
         
         const filtered = baseTasks.filter(task => task.title.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -187,7 +188,7 @@ export default function TasksPage() {
         const progress = totalTasks > 0 ? (completedTasksCount / totalTasks) * 100 : 0;
         
         return { groupedTasks: grouped, overallProgress: { completed: completedTasksCount, total: totalTasks, percentage: progress } };
-    }, [tasks, searchQuery, sortOption, user, linkedPartner, taskView]);
+    }, [tasks, searchQuery, sortOption, user, taskView]);
 
 
     const openTaskDialog = (task: Task | null) => {
@@ -202,7 +203,8 @@ export default function TasksPage() {
                 completed: false,
                 category: taskCategories[0],
                 priority: 'Medium',
-                owner: user?.uid
+                owner: user?.uid,
+                shared: !!linkedPartner,
             });
         }
         setIsTaskDialogOpen(true);
@@ -222,21 +224,35 @@ export default function TasksPage() {
             category: formState.category,
             priority: formState.priority,
             owner: formState.owner || user.uid,
+            shared: formState.shared || false,
         };
 
         try {
             const updates: { [key: string]: any } = {};
-            if (activeTask) {
+
+            if (activeTask) { // Editing existing task
+                const wasShared = activeTask.shared;
+                const isShared = taskData.shared;
+                
                 updates[`/users/${user.uid}/tasks/${activeTask.id}`] = taskData;
+
                 if (linkedPartner) {
-                    updates[`/users/${linkedPartner.uid}/tasks/${activeTask.id}`] = taskData;
+                    if (wasShared && !isShared) { // Un-sharing
+                        updates[`/users/${linkedPartner.uid}/tasks/${activeTask.id}`] = null;
+                    } else if (!wasShared && isShared) { // Sharing for the first time
+                        updates[`/users/${linkedPartner.uid}/tasks/${activeTask.id}`] = taskData;
+                    } else if (wasShared && isShared) { // Updating a shared task
+                        updates[`/users/${linkedPartner.uid}/tasks/${activeTask.id}`] = taskData;
+                    }
                 }
                 toast({ variant: 'success', title: 'Success', description: 'Task updated.' });
-            } else {
+            } else { // Adding new task
                 const newTaskKey = push(ref(database, `users/${user.uid}/tasks`)).key;
                 if (!newTaskKey) throw new Error("Could not create task key");
+                
                 updates[`/users/${user.uid}/tasks/${newTaskKey}`] = taskData;
-                if (linkedPartner) {
+                
+                if (taskData.shared && linkedPartner) {
                     updates[`/users/${linkedPartner.uid}/tasks/${newTaskKey}`] = taskData;
                 }
                 toast({ variant: 'success', title: 'Success', description: 'Task added.' });
@@ -254,15 +270,15 @@ export default function TasksPage() {
         const newCompletedStatus = !task.completed;
         const updates: { [key: string]: any } = {};
         updates[`/users/${user.uid}/tasks/${task.id}/completed`] = newCompletedStatus;
-        if (linkedPartner) {
+
+        if (task.shared && linkedPartner) {
             updates[`/users/${linkedPartner.uid}/tasks/${task.id}/completed`] = newCompletedStatus;
         }
+
         try {
             await update(ref(database), updates);
         } catch (e: any) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not update task status.' });
-            // Revert UI change on failure
-            task.completed = !newCompletedStatus;
         }
     };
 
@@ -276,9 +292,11 @@ export default function TasksPage() {
         try {
             const updates: { [key: string]: null } = {};
             updates[`/users/${user.uid}/tasks/${taskToDelete.id}`] = null;
-            if (linkedPartner) {
+            
+            if (taskToDelete.shared && linkedPartner) {
                 updates[`/users/${linkedPartner.uid}/tasks/${taskToDelete.id}`] = null;
             }
+
             await update(ref(database), updates);
             toast({ variant: 'success', title: 'Success', description: 'Task deleted.' });
             setIsDeleteDialogOpen(false);
@@ -369,11 +387,11 @@ export default function TasksPage() {
             </div>
              {linkedPartner && (
               <div className="px-4 pb-2">
-                <Tabs defaultValue="all" onValueChange={(value) => setTaskView(value as 'all' | 'mine' | 'partner')} className="w-full">
+                <Tabs defaultValue="all" onValueChange={(value) => setTaskView(value as 'all' | 'private' | 'shared')} className="w-full">
                     <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="all">All Tasks</TabsTrigger>
-                        <TabsTrigger value="mine">My Tasks</TabsTrigger>
-                        <TabsTrigger value="partner">{linkedPartner.name}'s Tasks</TabsTrigger>
+                        <TabsTrigger value="all">All</TabsTrigger>
+                        <TabsTrigger value="private">Private</TabsTrigger>
+                        <TabsTrigger value="shared">Shared</TabsTrigger>
                     </TabsList>
                 </Tabs>
               </div>
@@ -490,6 +508,18 @@ export default function TasksPage() {
                             ))}
                         </div>
                       </div>
+                      {linkedPartner && (
+                        <div className="flex items-center space-x-2 pt-2">
+                            <Checkbox
+                                id="shared"
+                                checked={formState.shared}
+                                onCheckedChange={(checked) => setFormState(p => ({...p, shared: !!checked}))}
+                            />
+                            <Label htmlFor="shared" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                Share with {linkedPartner.name}
+                            </Label>
+                        </div>
+                      )}
                   </div>
                   <DialogFooter>
                       <Button onClick={handleSaveTask} className="w-full">Save Task</Button>
