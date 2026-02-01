@@ -36,7 +36,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Textarea } from '@/components/ui/textarea';
 import { useUser, useFirebase } from '@/firebase';
-import { ref, onValue, set, push, remove, update } from 'firebase/database';
+import { ref, onValue, set, push, remove, update, get } from 'firebase/database';
 import { useToast } from '@/hooks/use-toast';
 import type { Guest } from '@/lib/types';
 import { Upload, Download, ChevronDown, Plus } from 'lucide-react';
@@ -66,13 +66,14 @@ export default function GuestsPage() {
     const [sideFilter, setSideFilter] = useState<'all' | 'bride' | 'groom'>('all');
     const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'confirmed'>('all');
     const [searchQuery, setSearchQuery] = useState('');
+    const [linkedPartnerUid, setLinkedPartnerUid] = useState<string | null>(null);
     
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (user && database) {
             const guestsRef = ref(database, `users/${user.uid}/guests`);
-            const unsubscribe = onValue(guestsRef, (snapshot) => {
+            const unsubscribeGuests = onValue(guestsRef, (snapshot) => {
                 const data = snapshot.val();
                 if (data) {
                     const guestsList: Guest[] = Object.entries(data).map(([id, guest]) => ({
@@ -85,8 +86,16 @@ export default function GuestsPage() {
                 }
                 setLoading(false);
             });
+            
+            const partnerRef = ref(database, `users/${user.uid}/linkedPartner/uid`);
+            const unsubscribePartner = onValue(partnerRef, (snapshot) => {
+                setLinkedPartnerUid(snapshot.val() || null);
+            });
 
-            return () => unsubscribe();
+            return () => {
+                unsubscribeGuests();
+                unsubscribePartner();
+            };
         } else if (!user) {
             setLoading(false);
         }
@@ -148,13 +157,20 @@ export default function GuestsPage() {
             return;
         }
     
-        const guestData: Partial<Guest> = { 
-            ...formState,
+        const guestData: Omit<Guest, 'id'> = { 
+            name: formState.name,
+            side: formState.side || 'bride',
+            status: formState.status || 'pending',
+            group: formState.group || '',
+            email: formState.email || '',
+            phone: formState.phone || '',
+            notes: formState.notes || '',
+            diet: formState.diet || 'none',
             type: formState.type || 'individual'
         };
 
         if (guestData.type === 'family') {
-            const memberCount = parseInt(String(guestData.memberCount) || '0', 10);
+            const memberCount = parseInt(String(formState.memberCount) || '0', 10);
             if (isNaN(memberCount) || memberCount <= 0) {
                 toast({ variant: 'destructive', title: 'Invalid input', description: 'Number of guests for a family must be a positive number.' });
                 return;
@@ -168,18 +184,25 @@ export default function GuestsPage() {
             // Clear family-specific fields
             delete guestData.memberCount;
         }
-
-        delete guestData.id;
     
         try {
+            const updates: { [key: string]: any } = {};
             if (activeGuest?.id) {
-                const guestRef = ref(database, `users/${user.uid}/guests/${activeGuest.id}`);
-                await set(guestRef, guestData);
+                updates[`/users/${user.uid}/guests/${activeGuest.id}`] = guestData;
+                if (linkedPartnerUid) {
+                    updates[`/users/${linkedPartnerUid}/guests/${activeGuest.id}`] = guestData;
+                }
+                await update(ref(database), updates);
                 toast({ variant: 'success', title: 'Success', description: 'Guest updated.' });
             } else {
-                const guestsRef = ref(database, `users/${user.uid}/guests`);
-                const newGuestRef = push(guestsRef);
-                await set(newGuestRef, guestData);
+                const newGuestKey = push(ref(database, `users/${user.uid}/guests`)).key;
+                if (!newGuestKey) throw new Error("Failed to create new guest key.");
+
+                updates[`/users/${user.uid}/guests/${newGuestKey}`] = guestData;
+                if (linkedPartnerUid) {
+                    updates[`/users/${linkedPartnerUid}/guests/${newGuestKey}`] = guestData;
+                }
+                await update(ref(database), updates);
                 toast({ variant: 'success', title: 'Success', description: 'Guest added.' });
             }
             handleCloseGuestDialog();
@@ -201,7 +224,12 @@ export default function GuestsPage() {
     const handleConfirmDelete = async () => {
         if (!user || !database || !guestToDelete) return;
         try {
-            await remove(ref(database, `users/${user.uid}/guests/${guestToDelete.id}`));
+            const updates: { [key: string]: null } = {};
+            updates[`/users/${user.uid}/guests/${guestToDelete.id}`] = null;
+             if (linkedPartnerUid) {
+                updates[`/users/${linkedPartnerUid}/guests/${guestToDelete.id}`] = null;
+            }
+            await update(ref(database), updates);
             toast({ variant: 'success', title: 'Success', description: 'Guest deleted.' });
         } catch (e: any) {
             toast({ variant: 'destructive', title: 'Error', description: e.message || 'Could not delete guest.' });
@@ -321,9 +349,14 @@ export default function GuestsPage() {
                 const updates: { [key: string]: any } = {};
                 guestsToUpload.forEach(guest => {
                     const newGuestKey = push(ref(database, `users/${user.uid}/guests`)).key;
-                    if(newGuestKey) updates[newGuestKey] = guest;
+                    if(newGuestKey) {
+                        updates[`/users/${user.uid}/guests/${newGuestKey}`] = guest;
+                        if(linkedPartnerUid) {
+                            updates[`/users/${linkedPartnerUid}/guests/${newGuestKey}`] = guest;
+                        }
+                    }
                 });
-                await update(ref(database, `users/${user.uid}/guests`), updates);
+                await update(ref(database), updates);
                 toast({ variant: 'success', title: 'Upload Successful', description: `${guestsToUpload.length} guest entries imported.` });
             } catch (e) {
                 toast({ variant: 'destructive', title: 'Upload Failed', description: 'An error occurred during upload.' });

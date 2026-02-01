@@ -5,15 +5,17 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useUser, useFirebase } from '@/firebase';
-import { ref, get, update, remove } from 'firebase/database';
+import { ref, get, update, remove, onValue, push } from 'firebase/database';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Trash2, Upload, LogOut, User, Image as ImageIcon, Sparkles, AlertTriangle, Calendar as CalendarIcon, Link as LinkIcon } from 'lucide-react';
+import { Loader2, Trash2, Upload, LogOut, User, Image as ImageIcon, Sparkles, AlertTriangle, Calendar as CalendarIcon, Link as LinkIcon, Copy } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from '@/components/ui/skeleton';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -43,9 +45,17 @@ export default function SettingsPage() {
   const [isProcessingImage, setIsProcessingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
+  const [invitationCode, setInvitationCode] = useState('');
+  const [partnerCode, setPartnerCode] = useState('');
+  const [generatingCode, setGeneratingCode] = useState(false);
+  const [joining, setJoining] = useState(false);
+  const [linkedPartner, setLinkedPartner] = useState<{name: string, uid: string} | null>(null);
+
   useEffect(() => {
     if (user && database) {
-      get(ref(database, 'users/' + user.uid)).then((snapshot) => {
+      const userRef = ref(database, 'users/' + user.uid);
+      const unsubscribeUser = onValue(userRef, (snapshot) => {
         if (snapshot.exists()) {
           const data = snapshot.val();
           setFormData({
@@ -54,9 +64,11 @@ export default function SettingsPage() {
             weddingDate: data.weddingDate || '',
             heroImage: data.heroImage || '',
           });
+          setLinkedPartner(data.linkedPartner || null);
         }
         setLoading(false);
       });
+      return () => unsubscribeUser();
     } else if (!user && !userLoading) {
       setLoading(false);
     }
@@ -194,8 +206,15 @@ export default function SettingsPage() {
       toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to perform this action.'});
       return;
     }
+
+    const updates: { [key: string]: null } = {};
+    updates[`users/${user.uid}/tasks`] = null;
+    if (linkedPartner?.uid) {
+        updates[`users/${linkedPartner.uid}/tasks`] = null;
+    }
+
     try {
-      await remove(ref(database, `users/${user.uid}/tasks`));
+      await update(ref(database), updates);
       toast({ variant: 'success', title: 'Success!', description: 'All tasks have been deleted.' });
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Uh oh! Something went wrong.', description: error.message || 'Could not delete tasks.' });
@@ -203,6 +222,83 @@ export default function SettingsPage() {
       setIsTasksAlertOpen(false);
     }
   };
+
+  const generateInvitation = async () => {
+    if (!user || !database) return;
+    setGeneratingCode(true);
+    try {
+        const invRef = push(ref(database, 'invitations'));
+        await set(invRef, { fromUid: user.uid, fromName: formData.name });
+        setInvitationCode(invRef.key!);
+    } catch(e) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not generate invitation code.'})
+    } finally {
+        setGeneratingCode(false);
+    }
+  };
+
+  const joinPartnerPlan = async () => {
+    if (!user || !database || !partnerCode) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Please enter an invitation code.'})
+        return;
+    }
+    setJoining(true);
+    try {
+        const invRef = ref(database, `invitations/${partnerCode}`);
+        const invSnapshot = await get(invRef);
+        if (!invSnapshot.exists()) {
+            throw new Error('Invalid invitation code.');
+        }
+        const { fromUid, fromName } = invSnapshot.val();
+
+        // Sync data
+        const partnerDataSnap = await get(ref(database, `users/${fromUid}`));
+        const myDataSnap = await get(ref(database, `users/${user.uid}`));
+        const partnerData = partnerDataSnap.val() || {};
+        const myData = myDataSnap.val() || {};
+        
+        const mergedTasks = { ...(partnerData.tasks || {}), ...(myData.tasks || {}) };
+        const mergedGuests = { ...(partnerData.guests || {}), ...(myData.guests || {}) };
+
+        const updates: { [key: string]: any } = {};
+        // Link accounts
+        updates[`/users/${user.uid}/linkedPartner`] = { uid: fromUid, name: fromName };
+        updates[`/users/${fromUid}/linkedPartner`] = { uid: user.uid, name: formData.name };
+        // Sync data
+        updates[`/users/${user.uid}/tasks`] = mergedTasks;
+        updates[`/users/${fromUid}/tasks`] = mergedTasks;
+        updates[`/users/${user.uid}/guests`] = mergedGuests;
+        updates[`/users/${fromUid}/guests`] = mergedGuests;
+        // Delete invitation
+        updates[`/invitations/${partnerCode}`] = null;
+        
+        await update(ref(database), updates);
+
+        toast({ variant: 'success', title: "You're linked!", description: `You and ${fromName} are now sharing plans.`});
+        setIsLinkDialogOpen(false);
+
+    } catch (e: any) {
+        toast({ variant: 'destructive', title: 'Failed to Join', description: e.message });
+    } finally {
+        setJoining(false);
+    }
+  };
+  
+  const handleUnlink = async () => {
+    if (!user || !database || !linkedPartner) return;
+    
+    const updates: { [key: string]: null } = {};
+    updates[`/users/${user.uid}/linkedPartner`] = null;
+    updates[`/users/${linkedPartner.uid}/linkedPartner`] = null;
+
+    try {
+        await update(ref(database), updates);
+        toast({ variant: 'success', title: 'Accounts Unlinked', description: 'Your accounts are no longer sharing data.'});
+    } catch (e: any) {
+        toast({ variant: 'destructive', title: 'Error', description: e.message || 'Could not unlink accounts.'});
+    }
+  };
+
 
   const defaultHeroImage = PlaceHolderImages.find(img => img.id === 'wedding-hero');
   const currentImageSrc = newImage || formData.heroImage || defaultHeroImage?.imageUrl;
@@ -358,11 +454,24 @@ export default function SettingsPage() {
             Partner Sync
           </h3>
           <div className="space-y-4 rounded-xl border bg-card p-4">
-              <p className="text-sm text-muted-foreground">Share your dashboard, tasks, and guest list with your partner by linking your accounts.</p>
-              <Button variant="outline" className="w-full" onClick={() => toast({title: "Coming Soon!", description: "This feature is under development."})}>
-                <LinkIcon className="mr-2 h-4 w-4" />
-                Link with Partner
-            </Button>
+            {linkedPartner ? (
+                <div>
+                    <p className="text-sm text-muted-foreground">You are linked with <span className="font-bold text-foreground">{linkedPartner.name}</span>.</p>
+                    <p className="text-sm text-muted-foreground">Your tasks and guest list are being synced.</p>
+                    <Button variant="outline" className="w-full mt-4" onClick={handleUnlink}>
+                        <LinkIcon className="mr-2 h-4 w-4" />
+                        Unlink Account
+                    </Button>
+                </div>
+            ) : (
+                <>
+                <p className="text-sm text-muted-foreground">Share your dashboard, tasks, and guest list with your partner by linking your accounts.</p>
+                <Button variant="outline" className="w-full" onClick={() => setIsLinkDialogOpen(true)}>
+                    <LinkIcon className="mr-2 h-4 w-4" />
+                    Link with Partner
+                </Button>
+                </>
+            )}
           </div>
         </div>
 
@@ -389,7 +498,7 @@ export default function SettingsPage() {
             <div className="space-y-4 rounded-xl border border-destructive/50 bg-destructive/5 p-4">
                 <div>
                   <p className="font-semibold">Delete All Tasks</p>
-                  <p className="text-sm text-destructive/80">This will permanently delete all task data. This action cannot be undone.</p>
+                  <p className="text-sm text-destructive/80">This will permanently delete all task data for you and your linked partner. This action cannot be undone.</p>
                 </div>
                 <Button
                   variant="destructive"
@@ -410,7 +519,7 @@ export default function SettingsPage() {
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete all of your
-              task data.
+              task data for you and your linked partner.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -424,6 +533,52 @@ export default function SettingsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={isLinkDialogOpen} onOpenChange={setIsLinkDialogOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Link with Partner</DialogTitle>
+                <DialogDescription>
+                    Share an invitation code with your partner, or enter a code they sent you. Linking will merge and sync your tasks and guest lists.
+                </DialogDescription>
+            </DialogHeader>
+            <Tabs defaultValue="invite" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="invite">Invite</TabsTrigger>
+                    <TabsTrigger value="accept">Accept</TabsTrigger>
+                </TabsList>
+                <TabsContent value="invite" className="pt-4">
+                    <div className="space-y-3 text-center">
+                        <p className="text-sm text-muted-foreground">Share this one-time code with your partner.</p>
+                        {invitationCode ? (
+                            <div className="flex items-center space-x-2">
+                                <Input value={invitationCode} readOnly className="font-mono text-lg h-12 text-center tracking-widest" />
+                                <Button size="icon" onClick={() => { navigator.clipboard.writeText(invitationCode); toast({ title: 'Copied!'})}}>
+                                    <Copy className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        ) : (
+                             <Button onClick={generateInvitation} disabled={generatingCode} className="w-full">
+                                {generatingCode ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Generate Code"}
+                            </Button>
+                        )}
+                    </div>
+                </TabsContent>
+                <TabsContent value="accept" className="pt-4">
+                     <div className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="partner-code">Invitation Code</Label>
+                            <Input id="partner-code" value={partnerCode} onChange={(e) => setPartnerCode(e.target.value)} placeholder="Enter code from partner" />
+                        </div>
+                        <Button onClick={joinPartnerPlan} disabled={joining} className="w-full">
+                            {joining ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Join Partner's Plan"}
+                        </Button>
+                    </div>
+                </TabsContent>
+            </Tabs>
+        </DialogContent>
+    </Dialog>
+
     </div>
   );
 }

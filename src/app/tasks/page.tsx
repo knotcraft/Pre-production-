@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { useUser, useFirebase } from '@/firebase';
-import { ref, onValue, set, push, update, remove } from 'firebase/database';
+import { ref, onValue, set, push, update, remove, get } from 'firebase/database';
 import type { Task } from '@/lib/types';
 import { Trash2, Pencil, Plus } from 'lucide-react';
 import {
@@ -99,12 +99,14 @@ export default function TasksPage() {
         category: taskCategories[0],
         priority: 'Medium',
     });
+
+    const [linkedPartnerUid, setLinkedPartnerUid] = useState<string | null>(null);
     
     useEffect(() => {
         if (user && database) {
             setLoading(true);
             const tasksRef = ref(database, `users/${user.uid}/tasks`);
-            const unsubscribe = onValue(tasksRef, (snapshot) => {
+            const unsubscribeTasks = onValue(tasksRef, (snapshot) => {
                 const data = snapshot.val();
                 const tasksList: Task[] = data
                     ? Object.entries(data).map(([id, task]) => ({
@@ -115,7 +117,16 @@ export default function TasksPage() {
                 setTasks(tasksList);
                 setLoading(false);
             });
-            return () => unsubscribe();
+            
+            const partnerRef = ref(database, `users/${user.uid}/linkedPartner/uid`);
+            const unsubscribePartner = onValue(partnerRef, (snapshot) => {
+                setLinkedPartnerUid(snapshot.val() || null);
+            });
+
+            return () => {
+                unsubscribeTasks();
+                unsubscribePartner();
+            };
         } else if (!user) {
             setLoading(false);
         }
@@ -201,13 +212,23 @@ export default function TasksPage() {
         };
 
         try {
+            const updates: { [key: string]: any } = {};
             if (activeTask) {
-                await update(ref(database, `users/${user.uid}/tasks/${activeTask.id}`), taskData);
+                updates[`/users/${user.uid}/tasks/${activeTask.id}`] = taskData;
+                if (linkedPartnerUid) {
+                    updates[`/users/${linkedPartnerUid}/tasks/${activeTask.id}`] = taskData;
+                }
                 toast({ variant: 'success', title: 'Success', description: 'Task updated.' });
             } else {
-                await set(push(ref(database, `users/${user.uid}/tasks`)), taskData);
+                const newTaskKey = push(ref(database, `users/${user.uid}/tasks`)).key;
+                if (!newTaskKey) throw new Error("Could not create task key");
+                updates[`/users/${user.uid}/tasks/${newTaskKey}`] = taskData;
+                if (linkedPartnerUid) {
+                    updates[`/users/${linkedPartnerUid}/tasks/${newTaskKey}`] = taskData;
+                }
                 toast({ variant: 'success', title: 'Success', description: 'Task added.' });
             }
+            await update(ref(database), updates);
             setIsTaskDialogOpen(false);
             setActiveTask(null);
         } catch (e: any) {
@@ -217,10 +238,18 @@ export default function TasksPage() {
     
     const toggleTaskCompletion = async (task: Task) => {
         if (!user || !database) return;
+        const newCompletedStatus = !task.completed;
+        const updates: { [key: string]: any } = {};
+        updates[`/users/${user.uid}/tasks/${task.id}/completed`] = newCompletedStatus;
+        if (linkedPartnerUid) {
+            updates[`/users/${linkedPartnerUid}/tasks/${task.id}/completed`] = newCompletedStatus;
+        }
         try {
-            await update(ref(database, `users/${user.uid}/tasks/${task.id}`), { completed: !task.completed });
+            await update(ref(database), updates);
         } catch (e: any) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not update task status.' });
+            // Revert UI change on failure
+            task.completed = !newCompletedStatus;
         }
     };
 
@@ -232,7 +261,12 @@ export default function TasksPage() {
     const handleDeleteTask = async () => {
         if (!user || !database || !taskToDelete) return;
         try {
-            await remove(ref(database, `users/${user.uid}/tasks/${taskToDelete.id}`));
+            const updates: { [key: string]: null } = {};
+            updates[`/users/${user.uid}/tasks/${taskToDelete.id}`] = null;
+            if (linkedPartnerUid) {
+                updates[`/users/${linkedPartnerUid}/tasks/${taskToDelete.id}`] = null;
+            }
+            await update(ref(database), updates);
             toast({ variant: 'success', title: 'Success', description: 'Task deleted.' });
             setIsDeleteDialogOpen(false);
             setTaskToDelete(null);
@@ -456,3 +490,5 @@ export default function TasksPage() {
         </div>
     );
 }
+
+    
