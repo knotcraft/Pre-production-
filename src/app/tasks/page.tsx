@@ -252,19 +252,25 @@ export default function TasksPage() {
                 // Task is newly shared or is a new shared task
                 const partnerSettingsSnap = await get(ref(database, `users/${linkedPartner.uid}/notificationSettings`));
                 if (partnerSettingsSnap.val()?.taskShared !== false) { // Default to ON
+                    const currentUserDataSnap = await get(ref(database, `users/${user.uid}`));
+                    const currentUserData = currentUserDataSnap.val();
+                    const senderName = currentUserData?.name || user.displayName || 'Your partner';
+
                     const newNotifKey = push(ref(database)).key;
                     const message = isNewTask 
-                        ? `${user.displayName} added a shared task: "${taskData.title}"`
-                        : `${user.displayName} shared a task with you: "${taskData.title}"`;
+                        ? `${senderName} added a shared task: "${taskData.title}"`
+                        : `${senderName} shared a task with you: "${taskData.title}"`;
 
-                    updates[`/notifications/${linkedPartner.uid}/${newNotifKey}`] = {
-                        message,
-                        link: '/tasks',
-                        read: false,
-                        createdAt: new Date().toISOString(),
-                        type: 'TASK_SHARED',
-                        relatedId: taskId,
-                    };
+                    if(newNotifKey){
+                        updates[`/notifications/${linkedPartner.uid}/${newNotifKey}`] = {
+                            message,
+                            link: '/tasks',
+                            read: false,
+                            createdAt: new Date().toISOString(),
+                            type: 'TASK_SHARED',
+                            relatedId: taskId,
+                        };
+                    }
                 }
             }
         }
