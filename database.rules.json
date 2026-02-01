@@ -7,8 +7,10 @@
       }
     },
     "invitations": {
-      ".read": "auth.uid != null",
-      ".write": "auth.uid != null"
+      "$invitationId": {
+        ".read": "auth.uid != null",
+        ".write": "auth.uid != null"
+      }
     }
   }
 }
