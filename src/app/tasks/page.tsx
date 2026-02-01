@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useUser, useFirebase } from '@/firebase';
 import { ref, onValue, set, push, update, remove, get } from 'firebase/database';
 import type { Task } from '@/lib/types';
-import { Trash2, Pencil, Plus } from 'lucide-react';
+import { Trash2, Pencil, Plus, Users } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -441,7 +441,12 @@ export default function TasksPage() {
                                 />
                               </div>
                               <div className={cn("flex flex-col flex-1", task.completed && "checked-task")}>
-                                <p className="text-[#181113] dark:text-white text-sm font-semibold">{task.title}</p>
+                                <div className="flex items-center gap-1.5">
+                                    <p className="text-[#181113] dark:text-white text-sm font-semibold">{task.title}</p>
+                                    {task.shared && linkedPartner && taskView === 'all' && (
+                                        <Users className="h-3 w-3 text-primary" title="Shared Task"/>
+                                    )}
+                                </div>
                                 <p className="text-[#89616b] text-[11px]">Due: {isValid(parseISO(task.dueDate)) ? format(parseISO(task.dueDate), 'MMM dd') : 'Invalid Date'} • {task.priority} Priority</p>
                               </div>
                               <span className={cn("material-symbols-outlined text-[20px]", priorityMap[task.priority].color)} style={{fontVariationSettings: `'FILL' ${priorityMap[task.priority].iconFill}`}}>flag</span>
