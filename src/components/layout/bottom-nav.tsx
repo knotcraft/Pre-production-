@@ -8,9 +8,9 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { href: "/", label: "Timeline", icon: "home" },
   { href: "/tasks", label: "Tasks", icon: "checklist" },
+  { href: "/vendors", label: "Vendors", icon: "storefront" },
   { href: "/guests", label: "Guests", icon: "group" },
   { href: "/budget", label: "Budget", icon: "account_balance_wallet" },
-  { href: "/settings", label: "Settings", icon: "settings" },
 ];
 
 export function BottomNav() {

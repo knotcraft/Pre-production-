@@ -174,7 +174,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const isPersonalizePage = pathname === '/personalize';
 
   if (isAuthPage || (isPersonalizePage && user)) {
-    return <div className="animate-fade-in">{children}</div>;
+    return <main className="animate-fade-in">{children}</main>;
   }
   
   if (!user) {

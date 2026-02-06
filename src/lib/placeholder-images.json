@@ -5,6 +5,24 @@
       "description": "Romantic outdoor wedding setup with flowers",
       "imageUrl": "https://images.unsplash.com/photo-1521543832500-49e69fb2bea2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHx3ZWRkaW5nJTIwZmxvd2Vyc3xlbnwwfHx8fDE3NjkzNjI2NDR8MA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "wedding flowers"
+    },
+    {
+      "id": "vendor-venue",
+      "description": "Luxury outdoor wedding venue with white flowers",
+      "imageUrl": "https://images.unsplash.com/photo-1597911472538-0c6797746416?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHx3ZWRkaW5nJTIwdmVudWV8ZW58MHx8fHwxNzE5MjU4MTg5fDA&ixlib=rb-4.0.3&q=80&w=1080",
+      "imageHint": "wedding venue"
+    },
+    {
+      "id": "vendor-catering",
+      "description": "Gourmet wedding catering platter with appetizers",
+      "imageUrl": "https://images.unsplash.com/photo-1550966871-3cc1b5bae236?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHx3ZWRkaW5nJTIwY2F0ZXJpbmd8ZW58MHx8fHwxNzE5MjU4MjIyfDA&ixlib=rb-4.0.3&q=80&w=1080",
+      "imageHint": "wedding catering"
+    },
+    {
+      "id": "vendor-photographer",
+      "description": "Professional wedding photographer taking a photo",
+      "imageUrl": "https://images.unsplash.com/photo-1512290746435-39589134b223?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHx3ZWRkaW5nJTIwcGhvdG9ncmFwaGVyfGVufDB8fHx8MTcxOTI1ODMwOXww&ixlib=rb-4.0.3&q=80&w=1080",
+      "imageHint": "wedding photographer"
     }
   ]
 }
