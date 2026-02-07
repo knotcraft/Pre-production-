@@ -1,43 +1,20 @@
 
 'use client';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import Image from 'next/image';
+import Link from 'next/link';
+import { allVendors } from '@/lib/vendor-data';
 
 const vendorCategories = [
-  { name: 'Catering', icon: 'restaurant' },
-  { name: 'Music & DJ', icon: 'headset' },
-  { name: 'Decoration', icon: 'celebration' },
-  { name: 'Photography', icon: 'photo_camera' },
-  { name: 'Venues', icon: 'castle' },
-  { name: 'Florist', icon: 'local_florist' },
+  { name: 'Catering', icon: 'restaurant', slug: 'catering' },
+  { name: 'Music & DJ', icon: 'headset', slug: 'music-dj' },
+  { name: 'Decoration', icon: 'celebration', slug: 'decoration' },
+  { name: 'Photography', icon: 'photo_camera', slug: 'photography' },
+  { name: 'Venues', icon: 'castle', slug: 'venues' },
+  { name: 'Florist', icon: 'local_florist', slug: 'florist' },
 ];
 
-const featuredVendors = [
-  {
-    id: 'vendor-1',
-    name: 'Grand Palace Gardens',
-    location: 'Napa Valley, CA',
-    rating: 4.9,
-    price: '$$$',
-    image: PlaceHolderImages.find(img => img.id === 'vendor-venue'),
-  },
-  {
-    id: 'vendor-2',
-    name: 'Elite Catering Co.',
-    location: 'San Francisco, CA',
-    rating: 4.8,
-    price: '$$',
-    image: PlaceHolderImages.find(img => img.id === 'vendor-catering'),
-  },
-  {
-    id: 'vendor-3',
-    name: 'Bloom & Lens Studio',
-    location: 'Los Angeles, CA',
-    rating: 5.0,
-    price: '$$$',
-    image: PlaceHolderImages.find(img => img.id === 'vendor-photographer'),
-  },
-];
+const featuredVendorIds = ['vendor-1', 'vendor-2', 'vendor-3'];
+const featuredVendors = allVendors.filter(v => featuredVendorIds.includes(v.id));
 
 export default function VendorsPage() {
   return (
@@ -71,12 +48,14 @@ export default function VendorsPage() {
         </div>
         <div className="grid grid-cols-2 gap-3">
           {vendorCategories.map((category) => (
-            <div key={category.name} className="bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-lg p-4 flex flex-col items-center justify-center gap-3 transition-transform active:scale-95">
-              <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <span className="material-symbols-outlined text-primary text-2xl">{category.icon}</span>
-              </div>
-              <span className="font-bold text-sm">{category.name}</span>
-            </div>
+            <Link key={category.name} href={`/vendors/${category.slug}`} passHref>
+                <div className="bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-lg p-4 flex flex-col items-center justify-center gap-3 transition-transform active:scale-95 h-full">
+                    <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center">
+                        <span className="material-symbols-outlined text-primary text-2xl">{category.icon}</span>
+                    </div>
+                    <span className="font-bold text-sm text-center">{category.name}</span>
+                </div>
+            </Link>
           ))}
         </div>
       </div>
