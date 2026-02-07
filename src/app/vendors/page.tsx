@@ -46,7 +46,6 @@ export default function VendorsPage() {
       <div className="sticky top-0 z-20 bg-white/80 dark:bg-[#1a0c10]/80 backdrop-blur-md px-4 pt-6 pb-2">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary text-3xl">favorite</span>
             <h1 className="text-2xl font-extrabold tracking-tight text-[#181113] dark:text-white">Vendors</h1>
           </div>
           <button className="size-10 flex items-center justify-center rounded-full bg-background-light dark:bg-white/10">
