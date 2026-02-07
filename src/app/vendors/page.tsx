@@ -3,6 +3,12 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { allVendors } from '@/lib/vendor-data';
+import { useState, useEffect } from 'react';
+import { useUser, useFirebase } from '@/firebase';
+import { ref, onValue } from 'firebase/database';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import type { Vendor } from '@/lib/vendor-data';
+
 
 const vendorCategories = [
   { name: 'Catering', icon: 'restaurant', slug: 'catering' },
@@ -17,6 +23,27 @@ const featuredVendorIds = ['vendor-1', 'vendor-2', 'vendor-3'];
 const featuredVendors = allVendors.filter(v => featuredVendorIds.includes(v.id));
 
 export default function VendorsPage() {
+  const { user } = useUser();
+  const { database } = useFirebase();
+  const [myVendors, setMyVendors] = useState<Vendor[]>([]);
+
+  useEffect(() => {
+    if (user && database) {
+      const myVendorsRef = ref(database, `users/${user.uid}/myVendors`);
+      const unsubscribe = onValue(myVendorsRef, (snapshot) => {
+        if (snapshot.exists()) {
+          const myVendorIds = Object.keys(snapshot.val());
+          const savedVendors = allVendors.filter(vendor => myVendorIds.includes(vendor.id));
+          setMyVendors(savedVendors);
+        } else {
+          setMyVendors([]);
+        }
+      });
+      return () => unsubscribe();
+    }
+  }, [user, database]);
+
+
   return (
     <div className="relative flex h-auto min-h-screen w-full flex-col bg-background-light dark:bg-[#1a0c10] overflow-x-hidden">
       {/* Header Section */}
@@ -39,6 +66,37 @@ export default function VendorsPage() {
           />
         </div>
       </div>
+      
+      {/* My Vendors Section */}
+      {myVendors.length > 0 && (
+        <div className="px-4 py-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold">My Vendors</h2>
+          </div>
+          <Link href="/vendors/my-vendors" passHref>
+            <div className="bg-primary/10 dark:bg-primary/20 border border-primary/20 rounded-xl p-4 flex items-center justify-between gap-3 transition-transform active:scale-95">
+              <div className="flex items-center gap-3">
+                <div className="flex -space-x-4">
+                  {myVendors.slice(0, 3).map(vendor => (
+                    <Avatar key={vendor.id} className="border-2 border-primary/30">
+                      <AvatarImage src={vendor.image?.imageUrl} />
+                      <AvatarFallback>{vendor.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                  ))}
+                </div>
+                <div>
+                  <p className="font-bold text-base text-foreground">
+                    Your Saved List
+                  </p>
+                  <p className="text-sm text-muted-foreground">{myVendors.length} vendor{myVendors.length > 1 ? 's' : ''} saved</p>
+                </div>
+              </div>
+              <span className="material-symbols-outlined text-primary">arrow_forward_ios</span>
+            </div>
+          </Link>
+        </div>
+      )}
+
 
       {/* Category Grid Section */}
       <div className="px-4 py-6">
