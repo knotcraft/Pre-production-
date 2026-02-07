@@ -5,8 +5,12 @@ import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import { allVendors } from '@/lib/vendor-data';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Phone, Star } from 'lucide-react';
+import { ArrowLeft, Phone, Star, Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useUser, useFirebase } from '@/firebase';
+import { ref, onValue, set, remove } from 'firebase/database';
+import { useState, useEffect } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 const vendorCategories = [
   { name: 'Catering', icon: 'restaurant', slug: 'catering' },
@@ -20,9 +24,49 @@ const vendorCategories = [
 export default function VendorListPage() {
   const params = useParams();
   const categorySlug = params.category as string;
+  const { user } = useUser();
+  const { database } = useFirebase();
+  const { toast } = useToast();
+  const [myVendorIds, setMyVendorIds] = useState<string[]>([]);
   
   const category = vendorCategories.find(cat => cat.slug === categorySlug);
   const vendors = allVendors.filter(vendor => vendor.categorySlug === categorySlug);
+
+  useEffect(() => {
+    if (user && database) {
+      const myVendorsRef = ref(database, `users/${user.uid}/myVendors`);
+      const unsubscribe = onValue(myVendorsRef, (snapshot) => {
+        if (snapshot.exists()) {
+          setMyVendorIds(Object.keys(snapshot.val()));
+        } else {
+          setMyVendorIds([]);
+        }
+      });
+      return () => unsubscribe();
+    }
+  }, [user, database]);
+
+  const handleToggleVendor = async (vendorId: string) => {
+    if (!user || !database) {
+      toast({ variant: 'destructive', title: 'Please log in to save vendors.' });
+      return;
+    }
+
+    const isSaved = myVendorIds.includes(vendorId);
+    const vendorRef = ref(database, `users/${user.uid}/myVendors/${vendorId}`);
+
+    try {
+      if (isSaved) {
+        await remove(vendorRef);
+        toast({ title: 'Vendor removed from your list.' });
+      } else {
+        await set(vendorRef, { added: new Date().toISOString() });
+        toast({ variant: 'success', title: 'Vendor added to your list!' });
+      }
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Error', description: error.message });
+    }
+  };
 
   if (!category) {
     return (
@@ -62,7 +106,9 @@ export default function VendorListPage() {
         </header>
 
         <main className="p-4 space-y-4 pb-24">
-             {vendors.length > 0 ? vendors.map((vendor) => (
+             {vendors.length > 0 ? vendors.map((vendor) => {
+                const isSaved = myVendorIds.includes(vendor.id);
+                return (
                 <div key={vendor.id} className="bg-white dark:bg-white/5 rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-white/10">
                     <div className="relative h-52 w-full">
                         {vendor.image ? (
@@ -84,30 +130,40 @@ export default function VendorListPage() {
                         </div>
                     </div>
                     <div className="p-4 space-y-3">
-                        <div>
-                            <h3 className="font-extrabold text-lg">{vendor.name}</h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
-                                <span className="material-symbols-outlined text-sm">location_on</span>
-                                {vendor.location}
-                            </p>
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <h3 className="font-extrabold text-lg">{vendor.name}</h3>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                                    <span className="material-symbols-outlined text-sm">location_on</span>
+                                    {vendor.location}
+                                </p>
+                            </div>
+                            <PriceDisplay price={vendor.price} />
                         </div>
                         
-                        <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-white/10">
-                           <PriceDisplay price={vendor.price} />
+                        <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-100 dark:border-white/10">
+                            <Button 
+                              onClick={() => handleToggleVendor(vendor.id)}
+                              variant={isSaved ? 'secondary' : 'outline'}
+                              className="w-full rounded-lg font-bold"
+                            >
+                              <Heart className={cn("h-4 w-4 mr-2", isSaved && "fill-primary text-primary")} />
+                              {isSaved ? 'Saved' : 'Save'}
+                            </Button>
                             {vendor.phone ? (
-                                <a href={`tel:${vendor.phone}`} className="flex-1 max-w-fit">
-                                    <Button className="rounded-full font-bold shadow-md shadow-primary/20">
+                                <a href={`tel:${vendor.phone}`} className="w-full">
+                                    <Button className="w-full rounded-lg font-bold shadow-md shadow-primary/20">
                                         <Phone className="h-4 w-4 mr-2" />
                                         Call Vendor
                                     </Button>
                                 </a>
                             ) : (
-                                <Button className="rounded-full font-bold" disabled>Not Available</Button>
+                                <Button className="w-full rounded-lg font-bold" disabled>Not Available</Button>
                             )}
                         </div>
                     </div>
                 </div>
-             )) : (
+             )}) : (
                 <div className="text-center p-10 flex flex-col items-center justify-center gap-4 text-muted-foreground h-full mt-16">
                     <span className="material-symbols-outlined text-6xl text-slate-300 dark:text-slate-700">search_off</span>
                     <h3 className="text-lg font-semibold text-foreground">No Vendors Found</h3>
