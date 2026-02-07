@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import { allVendors } from '@/lib/vendor-data';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Phone, Star, Heart } from 'lucide-react';
+import { ArrowLeft, Phone, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUser, useFirebase } from '@/firebase';
 import { ref, onValue, set, remove } from 'firebase/database';
@@ -147,8 +147,7 @@ export default function VendorListPage() {
                               variant={isSaved ? 'secondary' : 'outline'}
                               className="w-full rounded-lg font-bold"
                             >
-                              <Heart className={cn("h-4 w-4 mr-2", isSaved && "fill-primary text-primary")} />
-                              {isSaved ? 'Saved' : 'Save'}
+                              {isSaved ? 'Added' : 'Add'}
                             </Button>
                             {vendor.phone ? (
                                 <a href={`tel:${vendor.phone}`} className="w-full">
