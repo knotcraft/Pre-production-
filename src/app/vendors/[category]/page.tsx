@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -6,8 +5,8 @@ import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import { allVendors } from '@/lib/vendor-data';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Phone, Globe, Star } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ArrowLeft, Phone, Star } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const vendorCategories = [
   { name: 'Catering', icon: 'restaurant', slug: 'catering' },
@@ -36,12 +35,20 @@ export default function VendorListPage() {
     );
   }
 
+  const PriceDisplay = ({ price }: { price: '$$$' | '$$' | '$' }) => (
+    <div className="flex items-center">
+        <span className={cn("font-bold text-primary", price.length < 1 && 'opacity-30')}>$</span>
+        <span className={cn("font-bold text-primary", price.length < 2 && 'opacity-30')}>$</span>
+        <span className={cn("font-bold text-primary", price.length < 3 && 'opacity-30')}>$</span>
+    </div>
+);
+
   return (
-    <>
-        <header className="sticky top-0 z-20 bg-background/80 backdrop-blur-md px-4 pt-4 pb-4 border-b">
+    <div className="relative flex h-auto min-h-screen w-full flex-col bg-background-light dark:bg-[#1a0c10] overflow-x-hidden">
+        <header className="sticky top-0 z-20 bg-white/80 dark:bg-[#1a0c10]/80 backdrop-blur-md px-4 pt-4 pb-4 border-b border-gray-100 dark:border-white/10">
             <div className="flex items-center gap-2">
                  <Link href="/vendors" passHref>
-                    <Button variant="ghost" size="icon" className="-ml-2">
+                    <Button variant="ghost" size="icon" className="-ml-2 text-foreground">
                         <ArrowLeft />
                     </Button>
                 </Link>
@@ -54,10 +61,10 @@ export default function VendorListPage() {
             </div>
         </header>
 
-        <main className="p-4 space-y-4">
+        <main className="p-4 space-y-4 pb-24">
              {vendors.length > 0 ? vendors.map((vendor) => (
-                <div key={vendor.id} className="bg-card rounded-2xl overflow-hidden shadow-sm border">
-                    <div className="relative h-48 w-full">
+                <div key={vendor.id} className="bg-white dark:bg-white/5 rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-white/10">
+                    <div className="relative h-52 w-full">
                         {vendor.image ? (
                         <Image
                             alt={vendor.image.description}
@@ -71,34 +78,33 @@ export default function VendorListPage() {
                                 <span className="material-symbols-outlined text-muted-foreground text-4xl">image</span>
                             </div>
                         )}
-                        <div className="absolute top-3 right-3 bg-background/80 backdrop-blur-sm px-3 py-1.5 rounded-full flex items-center gap-1.5 text-sm font-bold">
+                        <div className="absolute top-3 right-3 bg-white/90 dark:bg-black/50 backdrop-blur-sm px-3 py-1.5 rounded-full flex items-center gap-1.5 text-sm font-bold shadow">
                             <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
                             <span>{vendor.rating.toFixed(1)}</span>
                         </div>
                     </div>
-                    <div className="p-4 space-y-4">
+                    <div className="p-4 space-y-3">
                         <div>
-                            <h3 className="font-bold text-lg">{vendor.name}</h3>
-                            <p className="text-sm text-muted-foreground flex items-center gap-1">
+                            <h3 className="font-extrabold text-lg">{vendor.name}</h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
                                 <span className="material-symbols-outlined text-sm">location_on</span>
                                 {vendor.location}
                             </p>
                         </div>
                         
-                        <div className="flex items-center justify-between">
-                            <span className="text-primary font-bold text-lg">{vendor.price}</span>
-                            <Button className="rounded-full font-bold">Book Now</Button>
-                        </div>
-                         {vendor.phone && (
-                            <div className="flex items-center gap-2 pt-4 border-t">
-                                <a href={`tel:${vendor.phone}`} className="flex-1">
-                                    <Button variant="outline" className="w-full rounded-lg">
+                        <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-white/10">
+                           <PriceDisplay price={vendor.price} />
+                            {vendor.phone ? (
+                                <a href={`tel:${vendor.phone}`} className="flex-1 max-w-fit">
+                                    <Button className="rounded-full font-bold shadow-md shadow-primary/20">
                                         <Phone className="h-4 w-4 mr-2" />
-                                        Call
+                                        Call Vendor
                                     </Button>
                                 </a>
-                            </div>
-                         )}
+                            ) : (
+                                <Button className="rounded-full font-bold" disabled>Not Available</Button>
+                            )}
+                        </div>
                     </div>
                 </div>
              )) : (
@@ -109,6 +115,6 @@ export default function VendorListPage() {
                 </div>
              )}
         </main>
-    </>
+    </div>
   );
 }
