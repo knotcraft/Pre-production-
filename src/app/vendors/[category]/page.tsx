@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -88,24 +89,14 @@ export default function VendorListPage() {
                             <span className="text-primary font-bold text-lg">{vendor.price}</span>
                             <Button className="rounded-full font-bold">Book Now</Button>
                         </div>
-                         {(vendor.phone || vendor.website) && (
+                         {vendor.phone && (
                             <div className="flex items-center gap-2 pt-4 border-t">
-                                {vendor.phone && (
-                                    <a href={`tel:${vendor.phone}`} className="flex-1">
-                                        <Button variant="outline" className="w-full rounded-lg">
-                                            <Phone className="h-4 w-4 mr-2" />
-                                            Call
-                                        </Button>
-                                    </a>
-                                )}
-                                {vendor.website && (
-                                    <a href={`https://${vendor.website}`} target="_blank" rel="noopener noreferrer" className="flex-1">
-                                        <Button variant="outline" className="w-full rounded-lg">
-                                            <Globe className="h-4 w-4 mr-2" />
-                                            Website
-                                        </Button>
-                                    </a>
-                                )}
+                                <a href={`tel:${vendor.phone}`} className="flex-1">
+                                    <Button variant="outline" className="w-full rounded-lg">
+                                        <Phone className="h-4 w-4 mr-2" />
+                                        Call
+                                    </Button>
+                                </a>
                             </div>
                          )}
                     </div>
