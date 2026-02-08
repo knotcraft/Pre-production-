@@ -3,7 +3,6 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { allVendors } from '@/lib/vendor-data';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Phone, Star, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -50,12 +49,12 @@ export default function MyVendorsPage() {
 
   useEffect(() => {
     if (user && database) {
+      setLoading(true);
       const myVendorsRef = ref(database, `users/${user.uid}/myVendors`);
       const unsubscribe = onValue(myVendorsRef, (snapshot) => {
         if (snapshot.exists()) {
-          const ids = Object.keys(snapshot.val());
-          const savedVendors = allVendors.filter(vendor => ids.includes(vendor.id));
-          setMyVendors(savedVendors);
+          const savedVendors = Object.values(snapshot.val());
+          setMyVendors(savedVendors as Vendor[]);
         } else {
           setMyVendors([]);
         }

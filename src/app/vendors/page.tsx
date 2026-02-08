@@ -2,12 +2,12 @@
 'use client';
 import Image from 'next/image';
 import Link from 'next/link';
-import { allVendors } from '@/lib/vendor-data';
 import { useState, useEffect } from 'react';
 import { useUser, useFirebase } from '@/firebase';
 import { ref, onValue } from 'firebase/database';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { Vendor } from '@/lib/vendor-data';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 const vendorCategories = [
@@ -19,22 +19,41 @@ const vendorCategories = [
   { name: 'Florist', icon: 'local_florist', slug: 'florist' },
 ];
 
-const featuredVendorIds = ['vendor-1', 'vendor-2', 'vendor-3'];
-const featuredVendors = allVendors.filter(v => featuredVendorIds.includes(v.id));
-
 export default function VendorsPage() {
   const { user } = useUser();
   const { database } = useFirebase();
   const [myVendors, setMyVendors] = useState<Vendor[]>([]);
+  const [allVendors, setAllVendors] = useState<Vendor[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const featuredVendorIds = ['vendor-1', 'vendor-2', 'vendor-3'];
+  const featuredVendors = allVendors.filter(v => featuredVendorIds.includes(v.id));
+
+  useEffect(() => {
+    if (database) {
+        setLoading(true);
+        const vendorsRef = ref(database, 'vendors');
+        const unsubscribeVendors = onValue(vendorsRef, (snapshot) => {
+            if (snapshot.exists()) {
+                const vendorsData = snapshot.val();
+                setAllVendors(Object.values(vendorsData));
+            } else {
+                setAllVendors([]);
+            }
+            setLoading(false);
+        });
+
+        return () => unsubscribeVendors();
+    }
+  }, [database]);
 
   useEffect(() => {
     if (user && database) {
       const myVendorsRef = ref(database, `users/${user.uid}/myVendors`);
       const unsubscribe = onValue(myVendorsRef, (snapshot) => {
         if (snapshot.exists()) {
-          const myVendorIds = Object.keys(snapshot.val());
-          const savedVendors = allVendors.filter(vendor => myVendorIds.includes(vendor.id));
-          setMyVendors(savedVendors);
+          const myVendorData = snapshot.val();
+          setMyVendors(Object.values(myVendorData) as Vendor[]);
         } else {
           setMyVendors([]);
         }
@@ -123,38 +142,56 @@ export default function VendorsPage() {
         <div className="px-4 flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold">Featured Vendors</h2>
         </div>
-        <div className="flex overflow-x-auto no-scrollbar gap-4 px-4">
-          {featuredVendors.map((vendor) => (
-            <div key={vendor.id} className="min-w-[280px] bg-white dark:bg-white/5 rounded-xl overflow-hidden shadow-sm border border-gray-100 dark:border-white/10">
-              <div className="relative h-40 w-full bg-gray-200">
-                {vendor.image && (
-                  <Image
-                    alt={vendor.image.description}
-                    className="h-full w-full object-cover"
-                    src={vendor.image.imageUrl}
-                    data-ai-hint={vendor.image.imageHint}
-                    fill
-                  />
-                )}
-                <div className="absolute top-3 right-3 bg-white/90 dark:bg-black/50 backdrop-blur-sm px-2 py-1 rounded-full flex items-center gap-1">
-                  <span className="material-symbols-outlined text-yellow-500 text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                  <span className="text-xs font-bold">{vendor.rating.toFixed(1)}</span>
-                </div>
-              </div>
-              <div className="p-4">
-                <h3 className="font-bold text-base mb-1">{vendor.name}</h3>
-                <p className="text-xs text-gray-500 mb-3 flex items-center gap-1">
-                  <span className="material-symbols-outlined text-sm">location_on</span>
-                  {vendor.location}
-                </p>
-                <div className="flex items-center justify-between">
-                  <span className="text-primary font-bold text-sm">{vendor.price}</span>
-                  <button className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-bold">Book Now</button>
-                </div>
-              </div>
+        {loading ? (
+             <div className="flex overflow-x-auto no-scrollbar gap-4 px-4">
+                {[...Array(2)].map((_, i) => (
+                    <div key={i} className="min-w-[280px] bg-white dark:bg-white/5 rounded-xl overflow-hidden shadow-sm border border-gray-100 dark:border-white/10">
+                        <Skeleton className="h-40 w-full" />
+                        <div className="p-4">
+                            <Skeleton className="h-5 w-3/4 mb-2" />
+                            <Skeleton className="h-4 w-1/2 mb-3" />
+                            <div className="flex items-center justify-between">
+                                <Skeleton className="h-5 w-8" />
+                                <Skeleton className="h-6 w-20" />
+                            </div>
+                        </div>
+                    </div>
+                ))}
             </div>
-          ))}
-        </div>
+        ) : (
+            <div className="flex overflow-x-auto no-scrollbar gap-4 px-4">
+            {featuredVendors.map((vendor) => (
+                <div key={vendor.id} className="min-w-[280px] bg-white dark:bg-white/5 rounded-xl overflow-hidden shadow-sm border border-gray-100 dark:border-white/10">
+                <div className="relative h-40 w-full bg-gray-200">
+                    {vendor.image && (
+                    <Image
+                        alt={vendor.image.description}
+                        className="h-full w-full object-cover"
+                        src={vendor.image.imageUrl}
+                        data-ai-hint={vendor.image.imageHint}
+                        fill
+                    />
+                    )}
+                    <div className="absolute top-3 right-3 bg-white/90 dark:bg-black/50 backdrop-blur-sm px-2 py-1 rounded-full flex items-center gap-1">
+                    <span className="material-symbols-outlined text-yellow-500 text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                    <span className="text-xs font-bold">{vendor.rating.toFixed(1)}</span>
+                    </div>
+                </div>
+                <div className="p-4">
+                    <h3 className="font-bold text-base mb-1">{vendor.name}</h3>
+                    <p className="text-xs text-gray-500 mb-3 flex items-center gap-1">
+                    <span className="material-symbols-outlined text-sm">location_on</span>
+                    {vendor.location}
+                    </p>
+                    <div className="flex items-center justify-between">
+                    <span className="text-primary font-bold text-sm">{vendor.price}</span>
+                    <button className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-bold">Book Now</button>
+                    </div>
+                </div>
+                </div>
+            ))}
+            </div>
+        )}
       </div>
     </div>
   );

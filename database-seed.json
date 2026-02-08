@@ -1,0 +1,158 @@
+
+{
+  "vendors": {
+    "vendor-1": {
+      "id": "vendor-1",
+      "name": "Grand Palace Gardens",
+      "category": "Venues",
+      "categorySlug": "venues",
+      "location": "Napa Valley, CA",
+      "rating": 4.9,
+      "price": "$$$",
+      "image": {
+        "id": "vendor-venue-1",
+        "description": "Luxury outdoor wedding venue with white flowers",
+        "imageUrl": "https://images.unsplash.com/photo-1597911472538-0c6797746416?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHx3ZWRkaW5nJTIwdmVudWV8ZW58MHx8fHwxNzE5MjU4MTg5fDA&ixlib=rb-4.0.3&q=80&w=1080",
+        "imageHint": "wedding venue"
+      },
+      "phone": "555-123-4567",
+      "website": "grandpalace.com"
+    },
+    "vendor-2": {
+      "id": "vendor-2",
+      "name": "Elite Catering Co.",
+      "category": "Catering",
+      "categorySlug": "catering",
+      "location": "San Francisco, CA",
+      "rating": 4.8,
+      "price": "$$",
+      "image": {
+        "id": "vendor-catering-1",
+        "description": "Gourmet wedding catering platter with appetizers",
+        "imageUrl": "https://images.unsplash.com/photo-1550966871-3cc1b5bae236?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHx3ZWRkaW5nJTIwY2F0ZXJpbmd8ZW58MHx8fHwxNzE5MjU4MjIyfDA&ixlib=rb-4.0.3&q=80&w=1080",
+        "imageHint": "wedding catering"
+      },
+      "phone": "555-234-5678",
+      "website": "elitecatering.com"
+    },
+    "vendor-3": {
+      "id": "vendor-3",
+      "name": "Bloom & Lens Studio",
+      "category": "Photography",
+      "categorySlug": "photography",
+      "location": "Los Angeles, CA",
+      "rating": 5,
+      "price": "$$$",
+      "image": {
+        "id": "vendor-photographer-1",
+        "description": "Professional wedding photographer taking a photo",
+        "imageUrl": "https://images.unsplash.com/photo-1512290746435-39589134b223?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHx3ZWRkaW5nJTIwcGhvdG9ncmFwaGVyfGVufDB8fHx8MTcxOTI1ODMwOXww&ixlib=rb-4.0.3&q=80&w=1080",
+        "imageHint": "wedding photographer"
+      },
+      "phone": "555-345-6789",
+      "website": "bloomandlens.com"
+    },
+    "vendor-4": {
+      "id": "vendor-4",
+      "name": "The Rustic Barn",
+      "category": "Venues",
+      "categorySlug": "venues",
+      "location": "Sonoma, CA",
+      "rating": 4.7,
+      "price": "$$",
+      "image": {
+        "id": "vendor-venue-2",
+        "description": "Rustic barn wedding venue interior",
+        "imageUrl": "https://images.unsplash.com/photo-1531053153677-73c3d0b28485?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxydXN0aWMlMjB3ZWRkaW5nJTIwdmVudWV8ZW58MHx8fHwxNzE5MzU4MzQyfDA&ixlib=rb-4.0.3&q=80&w=1080",
+        "imageHint": "rustic venue"
+      },
+      "phone": "555-123-4568",
+      "website": "rusticbarn.com"
+    },
+    "vendor-5": {
+      "id": "vendor-5",
+      "name": "Gourmet Gatherings",
+      "category": "Catering",
+      "categorySlug": "catering",
+      "location": "Oakland, CA",
+      "rating": 4.9,
+      "price": "$$$",
+      "image": {
+        "id": "vendor-catering-2",
+        "description": "Elegant wedding cake with flowers",
+        "imageUrl": "https://images.unsplash.com/photo-1559554323-91bae493524d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHx3ZWRkaW5nJTIwY2FrZXxlbnwwfHx8fDE3MTkzNTg0MjB8MA&ixlib=rb-4.0.3&q=80&w=1080",
+        "imageHint": "wedding cake"
+      },
+      "phone": "555-234-5679",
+      "website": "gourmetgatherings.com"
+    },
+    "vendor-6": {
+      "id": "vendor-6",
+      "name": "Captured Moments",
+      "category": "Photography",
+      "categorySlug": "photography",
+      "location": "San Diego, CA",
+      "rating": 4.8,
+      "price": "$$",
+      "image": {
+        "id": "vendor-photographer-2",
+        "description": "Bride and groom portrait",
+        "imageUrl": "https://images.unsplash.com/photo-1597157639079-24b745484a0a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHx3ZWRkaW5nJTIwcG9ydHJhaXR8ZW58MHx8fHwxNzE5MzU4NDYyfDA&ixlib=rb-4.0.3&q=80&w=1080",
+        "imageHint": "wedding portrait"
+      },
+      "phone": "555-345-6790",
+      "website": "capturedmoments.com"
+    },
+    "vendor-7": {
+      "id": "vendor-7",
+      "name": "Groove Masters",
+      "category": "Music & DJ",
+      "categorySlug": "music-dj",
+      "location": "San Francisco, CA",
+      "rating": 4.9,
+      "price": "$$",
+      "image": {
+        "id": "vendor-music-1",
+        "description": "DJ performing at a wedding reception",
+        "imageUrl": "https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHx3ZWRkaW5nJTIwZGp8ZW58MHx8fHwxNzE5MzU4NDk3fDA&ixlib=rb-4.0.3&q=80&w=1080",
+        "imageHint": "wedding dj"
+      },
+      "phone": "555-456-7890",
+      "website": "groovemasters.com"
+    },
+    "vendor-8": {
+      "id": "vendor-8",
+      "name": "Elegant Designs",
+      "category": "Decoration",
+      "categorySlug": "decoration",
+      "location": "Beverly Hills, CA",
+      "rating": 4.9,
+      "price": "$$$",
+      "image": {
+        "id": "vendor-decoration-1",
+        "description": "Beautifully decorated wedding arch",
+        "imageUrl": "https://images.unsplash.com/photo-1520854221256-17452cc3da25?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHx3ZWRkaW5nJTIwZGVjb3JhdGlvbnxlbnwwfHx8fDE3MTkzNTg1Mjh8MA&ixlib=rb-4.0.3&q=80&w=1080",
+        "imageHint": "wedding decoration"
+      },
+      "phone": "555-567-8901",
+      "website": "elegantdesigns.com"
+    },
+    "vendor-9": {
+      "id": "vendor-9",
+      "name": "Petal Perfect",
+      "category": "Florist",
+      "categorySlug": "florist",
+      "location": "Pasadena, CA",
+      "rating": 4.8,
+      "price": "$$",
+      "image": {
+        "id": "vendor-florist-1",
+        "description": "Close-up of a wedding bouquet",
+        "imageUrl": "https://images.unsplash.com/photo-1565881952210-cb5b1300994a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHx3ZWRkaW5nJTIwZmxvd2Vyc3xlbnwwfHx8fDE3MTkzNTg1NTd8MA&ixlib=rb-4.0.3&q=80&w=1080",
+        "imageHint": "wedding flowers"
+      },
+      "phone": "555-678-9012",
+      "website": "petalperfect.com"
+    }
+  }
+}
