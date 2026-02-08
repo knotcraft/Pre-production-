@@ -151,7 +151,7 @@ export default function MyVendorsPage() {
                             <div className="relative h-52 w-full">
                                 {vendor.image ? (
                                 <Image
-                                    alt={vendor.image.description}
+                                    alt={vendor.image.description || 'Vendor image'}
                                     className="h-full w-full object-cover"
                                     src={vendor.image.imageUrl}
                                     data-ai-hint={vendor.image.imageHint}
