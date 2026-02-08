@@ -72,7 +72,9 @@ export default function VendorListPage() {
                     ...(vendor as Omit<Vendor, 'id'>),
                     rating: parseFloat((vendor as any).rating || '0'),
                 }));
-                setVendors(allVendorsList.filter(vendor => vendor.categorySlug === categorySlug));
+                // Normalize slug for robust matching
+                const normalizeSlug = (slug: string) => slug ? slug.toLowerCase().replace(/\s*&\s*/g, '-').replace(/\s+/g, '-') : '';
+                setVendors(allVendorsList.filter(vendor => normalizeSlug(vendor.categorySlug) === categorySlug));
             } else {
                 setVendors([]);
             }
@@ -129,11 +131,11 @@ export default function VendorListPage() {
     );
   }
 
-  const PriceDisplay = ({ price }: { price: '$$$' | '$$' | '$' }) => (
+  const PriceDisplay = ({ price }: { price?: '$$$' | '$$' | '$' }) => (
     <div className="flex items-center">
-        <span className={cn("font-bold text-primary", price.length < 1 && 'opacity-30')}>$</span>
-        <span className={cn("font-bold text-primary", price.length < 2 && 'opacity-30')}>$</span>
-        <span className={cn("font-bold text-primary", price.length < 3 && 'opacity-30')}>$</span>
+        <span className={cn("font-bold text-primary", !price || price.length < 1 ? 'opacity-30' : '')}>$</span>
+        <span className={cn("font-bold text-primary", !price || price.length < 2 ? 'opacity-30' : '')}>$</span>
+        <span className={cn("font-bold text-primary", !price || price.length < 3 ? 'opacity-30' : '')}>$</span>
     </div>
 );
 
@@ -165,7 +167,7 @@ export default function VendorListPage() {
                             <div className="relative h-52 w-full">
                                 {vendor.image ? (
                                 <Image
-                                    alt={vendor.image.description}
+                                    alt={vendor.image.description || 'Vendor image'}
                                     className="h-full w-full object-cover"
                                     src={vendor.image.imageUrl}
                                     data-ai-hint={vendor.image.imageHint}
@@ -190,7 +192,7 @@ export default function VendorListPage() {
                                             {vendor.location}
                                         </p>
                                     </div>
-                                    <PriceDisplay price={vendor.price} />
+                                    <PriceDisplay price={vendor.price as ('$$$' | '$$' | '$')} />
                                 </div>
                                 
                                 <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-100 dark:border-white/10">
