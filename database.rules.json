@@ -14,7 +14,7 @@
     },
     "vendors": {
       ".read": "auth.uid != null",
-      ".write": false
+      ".write": "auth.uid != null"
     }
   }
 }
