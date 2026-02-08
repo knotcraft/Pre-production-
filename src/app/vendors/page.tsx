@@ -8,6 +8,7 @@ import { ref, onValue } from 'firebase/database';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { Vendor } from '@/lib/vendor-data';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
 
 const vendorCategories = [
@@ -66,6 +67,14 @@ export default function VendorsPage() {
       return () => unsubscribe();
     }
   }, [user, database]);
+
+  const PriceDisplay = ({ price }: { price?: '$$$' | '$$' | '$' }) => (
+    <div className="flex items-center">
+        <span className={cn("font-bold text-primary", !price || price.length < 1 ? 'opacity-30' : '')}>₹</span>
+        <span className={cn("font-bold text-primary", !price || price.length < 2 ? 'opacity-30' : '')}>₹</span>
+        <span className={cn("font-bold text-primary", !price || price.length < 3 ? 'opacity-30' : '')}>₹</span>
+    </div>
+  );
 
 
   return (
@@ -193,7 +202,7 @@ export default function VendorsPage() {
                     {vendor.location}
                     </p>
                     <div className="flex items-center justify-between">
-                    <span className="text-primary font-bold text-sm">{vendor.price}</span>
+                    <PriceDisplay price={vendor.price} />
                     <button className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-bold">Book Now</button>
                     </div>
                 </div>
