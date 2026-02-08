@@ -94,11 +94,11 @@ export default function MyVendorsPage() {
     }
   };
   
-    const PriceDisplay = ({ price }: { price: '$$$' | '$$' | '$' }) => (
+    const PriceDisplay = ({ price }: { price?: '$$$' | '$$' | '$' }) => (
         <div className="flex items-center">
-            <span className={cn("font-bold text-primary", price.length < 1 && 'opacity-30')}>$</span>
-            <span className={cn("font-bold text-primary", price.length < 2 && 'opacity-30')}>$</span>
-            <span className={cn("font-bold text-primary", price.length < 3 && 'opacity-30')}>$</span>
+            <span className={cn("font-bold text-primary", !price || price.length < 1 ? 'opacity-30' : '')}>₹</span>
+            <span className={cn("font-bold text-primary", !price || price.length < 2 ? 'opacity-30' : '')}>₹</span>
+            <span className={cn("font-bold text-primary", !price || price.length < 3 ? 'opacity-30' : '')}>₹</span>
         </div>
     );
 

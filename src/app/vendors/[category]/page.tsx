@@ -73,7 +73,7 @@ export default function VendorListPage() {
                     rating: parseFloat((vendor as any).rating || '0'),
                 }));
                 // Normalize slug for robust matching
-                const normalizeSlug = (slug: string) => slug ? slug.toLowerCase().replace(/\s*&\s*/g, '-').replace(/\s+/g, '-') : '';
+                const normalizeSlug = (slug: string) => slug ? slug.toLowerCase().replace(/\s*&\s*|\s+/g, '-') : '';
                 setVendors(allVendorsList.filter(vendor => normalizeSlug(vendor.categorySlug) === categorySlug));
             } else {
                 setVendors([]);
@@ -133,9 +133,9 @@ export default function VendorListPage() {
 
   const PriceDisplay = ({ price }: { price?: '$$$' | '$$' | '$' }) => (
     <div className="flex items-center">
-        <span className={cn("font-bold text-primary", !price || price.length < 1 ? 'opacity-30' : '')}>$</span>
-        <span className={cn("font-bold text-primary", !price || price.length < 2 ? 'opacity-30' : '')}>$</span>
-        <span className={cn("font-bold text-primary", !price || price.length < 3 ? 'opacity-30' : '')}>$</span>
+        <span className={cn("font-bold text-primary", !price || price.length < 1 ? 'opacity-30' : '')}>₹</span>
+        <span className={cn("font-bold text-primary", !price || price.length < 2 ? 'opacity-30' : '')}>₹</span>
+        <span className={cn("font-bold text-primary", !price || price.length < 3 ? 'opacity-30' : '')}>₹</span>
     </div>
 );
 
