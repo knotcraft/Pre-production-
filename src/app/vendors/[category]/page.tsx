@@ -66,8 +66,13 @@ export default function VendorListPage() {
         const vendorsRef = ref(database, 'vendors');
         const unsubscribe = onValue(vendorsRef, (snapshot) => {
             if (snapshot.exists()) {
-                const allVendors: Vendor[] = Object.values(snapshot.val());
-                setVendors(allVendors.filter(vendor => vendor.categorySlug === categorySlug));
+                const allVendorsData = snapshot.val();
+                const allVendorsList: Vendor[] = Object.entries(allVendorsData).map(([id, vendor]) => ({
+                    id,
+                    ...(vendor as Omit<Vendor, 'id'>),
+                    rating: parseFloat((vendor as any).rating || '0'),
+                }));
+                setVendors(allVendorsList.filter(vendor => vendor.categorySlug === categorySlug));
             } else {
                 setVendors([]);
             }

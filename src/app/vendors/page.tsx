@@ -36,7 +36,12 @@ export default function VendorsPage() {
         const unsubscribeVendors = onValue(vendorsRef, (snapshot) => {
             if (snapshot.exists()) {
                 const vendorsData = snapshot.val();
-                setAllVendors(Object.values(vendorsData));
+                const vendorsList: Vendor[] = Object.entries(vendorsData).map(([id, vendor]) => ({
+                    id,
+                    ...(vendor as Omit<Vendor, 'id'>),
+                    rating: parseFloat((vendor as any).rating || '0'),
+                }));
+                setAllVendors(vendorsList);
             } else {
                 setAllVendors([]);
             }
@@ -163,14 +168,18 @@ export default function VendorsPage() {
             {featuredVendors.map((vendor) => (
                 <div key={vendor.id} className="min-w-[280px] bg-white dark:bg-white/5 rounded-xl overflow-hidden shadow-sm border border-gray-100 dark:border-white/10">
                 <div className="relative h-40 w-full bg-gray-200">
-                    {vendor.image && (
-                    <Image
-                        alt={vendor.image.description}
-                        className="h-full w-full object-cover"
-                        src={vendor.image.imageUrl}
-                        data-ai-hint={vendor.image.imageHint}
-                        fill
-                    />
+                    {vendor.image ? (
+                      <Image
+                          alt={vendor.image.description}
+                          className="h-full w-full object-cover"
+                          src={vendor.image.imageUrl}
+                          data-ai-hint={vendor.image.imageHint}
+                          fill
+                      />
+                    ) : (
+                      <div className="h-full w-full bg-muted flex items-center justify-center">
+                          <span className="material-symbols-outlined text-muted-foreground text-4xl">image</span>
+                      </div>
                     )}
                     <div className="absolute top-3 right-3 bg-white/90 dark:bg-black/50 backdrop-blur-sm px-2 py-1 rounded-full flex items-center gap-1">
                     <span className="material-symbols-outlined text-yellow-500 text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
