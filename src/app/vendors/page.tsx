@@ -27,8 +27,7 @@ export default function VendorsPage() {
   const [allVendors, setAllVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const featuredVendorIds = ['vendor-1', 'vendor-2', 'vendor-3'];
-  const featuredVendors = allVendors.filter(v => featuredVendorIds.includes(v.id));
+  const featuredVendors = allVendors.slice(0, 3);
 
   useEffect(() => {
     if (database) {
@@ -179,7 +178,7 @@ export default function VendorsPage() {
                 <div className="relative h-40 w-full bg-gray-200">
                     {vendor.image ? (
                       <Image
-                          alt={vendor.image.description || 'Vendor image'}
+                          alt={vendor.image.description}
                           className="h-full w-full object-cover"
                           src={vendor.image.imageUrl}
                           data-ai-hint={vendor.image.imageHint}
@@ -202,7 +201,7 @@ export default function VendorsPage() {
                     {vendor.location}
                     </p>
                     <div className="flex items-center justify-between">
-                    <PriceDisplay price={vendor.price} />
+                    <PriceDisplay price={vendor.price as ('$$$' | '$$' | '$')} />
                     <button className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-bold">Book Now</button>
                     </div>
                 </div>
