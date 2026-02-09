@@ -58,7 +58,11 @@ export default function VendorsPage() {
       const unsubscribe = onValue(myVendorsRef, (snapshot) => {
         if (snapshot.exists()) {
           const myVendorData = snapshot.val();
-          setMyVendors(Object.values(myVendorData) as Vendor[]);
+          // Filter out non-object values to prevent crashes from old data structures
+          const savedVendors = Object.values(myVendorData).filter(
+            (v): v is Vendor => typeof v === 'object' && v !== null && 'id' in v
+          );
+          setMyVendors(savedVendors);
         } else {
           setMyVendors([]);
         }
