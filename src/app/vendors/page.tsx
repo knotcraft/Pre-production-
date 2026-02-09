@@ -112,7 +112,7 @@ export default function VendorsPage() {
                   {myVendors.slice(0, 3).map(vendor => (
                     <Avatar key={vendor.id} className="border-2 border-primary/30">
                       <AvatarImage src={vendor.image?.imageUrl} />
-                      <AvatarFallback>{vendor.name.charAt(0)}</AvatarFallback>
+                      <AvatarFallback>{vendor.name ? vendor.name.charAt(0) : 'V'}</AvatarFallback>
                     </Avatar>
                   ))}
                 </div>
